@@ -16,12 +16,9 @@ $env:PYTHONPATH = (Join-Path (Get-Location) "src")
 function Test-PortFree([int]$p) {
   try {
     $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $p)
-    $l.Start()
-    $l.Stop()
+    $l.Start(); $l.Stop()
     return $true
-  } catch {
-    return $false
-  }
+  } catch { return $false }
 }
 
 if ($AutoPort) {
@@ -29,6 +26,9 @@ if ($AutoPort) {
   while (-not (Test-PortFree $p)) { $p++ }
   $Port = $p
 }
+
+# Persist chosen port for other scripts/tools
+Set-Content -LiteralPath ".last-port" -Value "$Port" -Encoding ASCII -NoNewline
 
 Write-Host "Starting Legacy Doctor on http://127.0.0.1:$Port"
 python -m uvicorn legacy_doctor.api.server:app --host 127.0.0.1 --port $Port
