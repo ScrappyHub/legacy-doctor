@@ -1,119 +1,76 @@
 # Legacy Doctor
 
+Deterministic storage preservation and formatting instrument.
+
+Legacy Doctor provides verifiable, reproducible, and deterministic device management and formatting capabilities for legacy and modern storage media.
+
 ---
 
-Instrument-grade snapshot • archive • restore engine for governed systems
+## Core Principles
 
-Legacy Doctor is a deterministic, cryptographically-verifiable backup and restore instrument.
+Legacy Doctor guarantees:
 
-It produces content-addressed, sealed, attestable artifacts that can be:
+• deterministic execution  
+• explicit operator authorization  
+• reproducible device identity  
+• append-only canonical receipts  
+• standalone operation  
 
-snapshotted
+Legacy Doctor never performs destructive operations without explicit operator consent.
 
-compressed
+---
 
-encrypted
+## Features
 
-transported offline
+• deterministic device enumeration  
+• deterministic device identity generation  
+• controlled formatting workflows  
+• append-only receipt emission  
+• offline-first operation  
 
-restored byte-for-byte
+---
 
-independently verified
+## Example Usage
 
-witnessed by Never Forgetting Ledger (NFL)
+List devices:
 
-Legacy Doctor is not a cloud backup tool and not a sync client.
 
-It is an instrument — like a scientific device — designed to create provable system captures.
+powershell.exe -File scripts\storage\ld_storage_v1.ps1 -RepoRoot . -Cmd list
 
-Purpose
 
-Provide a Macrium-grade / 7zip-grade restore capability that is:
+Format device:
 
-deterministic
 
-hash-sealed
+powershell.exe -File scripts\storage\ld_storage_v1.ps1 -RepoRoot . -Cmd format -DiskNumber 5 -Fs exfat -Label SDCARD -IUnderstand ERASE_DISK_5
 
-policy governed
 
-air-gap friendly
+---
 
-independently attestable
+## Output
 
-Every restore can be proven correct, not merely trusted.
+Receipts stored in:
 
-Core responsibilities
 
-Legacy Doctor:
+proofs/receipts/storage.ndjson
 
-✅ snapshots file trees / partitions
-✅ builds canonical archives
-✅ compresses deterministically
-✅ encrypts bundles (AES-GCM)
-✅ emits sha256 manifests
-✅ signs artifacts (ssh-ed25519)
-✅ restores byte-exact
-✅ verifies before commit
-✅ pledges every operation locally
-✅ duplicates every pledge to NFL
 
-Legacy Doctor:
+---
 
-❌ does not manage devices (Watchtower does)
-❌ does not enforce policy (Covenant Gate does)
-❌ does not act as a ledger (NFL does)
+## Specification
 
-Architecture
-capture → archive → seal → sign → pledge → duplicate to NFL → restore → verify → commit
+See:
 
-Artifact invariants
+docs/SPECIFICATION.md
 
-Every artifact is:
+---
 
-content-addressed
+## Status
 
-sha256 sealed
+Tier-0 Alpha  
+Deterministic core operational
 
-detached-signed
+---
 
-canonical JSON
+## License
 
-UTF-8 no BOM + LF
-
-Packet Constitution v1 compliant
-
-Restore philosophy
-
-Restores use dual verification:
-
-byte hash integrity (sha256)
-
-semantic integrity (tree + transcript + attestation)
-
-No silent divergence.
-
-Platform order (locked)
-
-v1: Windows
-v2: Linux
-v3: macOS
-
-Same schema. Same artifact layout. Only capture adapters differ.
-
-Integration laws
-
-Legacy Doctor follows:
-
-Packet Constitution v1 (transport physics)
-
-NeverLost identity layer
-
-Local pledge log (append-only)
-
-Mandatory duplication to NFL
-
-It never communicates directly with other projects.
-
-Only:
-
-hashes → NFL
+MIT License
