@@ -1,0 +1,186 @@
+param(
+  [Parameter(Mandatory=$true)][string]$RepoRoot,
+  [Parameter(Mandatory=$true)][ValidateSet("list","format")][string]$Cmd,
+  [string]$DeviceId,
+  [int]$DiskNumber = -1,
+  [ValidateSet("fat32","exfat","ntfs")][string]$Fs,
+  [string]$Label = "SDCARD",
+  [string]$IUnderstand,
+  [string]$Fat32ToolPath
+)
+$ErrorActionPreference="Stop"
+Set-StrictMode -Version Latest
+
+function Die([string]$m){ throw $m }
+function EnsureDir([string]$p){ if([string]::IsNullOrWhiteSpace($p)){ return }; if(-not (Test-Path -LiteralPath $p)){ New-Item -ItemType Directory -Force -Path $p | Out-Null } }
+function Utf8NoBom(){ New-Object System.Text.UTF8Encoding($false) }
+function WriteUtf8Lf([string]$path,[string]$text){ EnsureDir (Split-Path -Parent $path); $lf=($text -replace "`r`n","`n") -replace "`r","`n"; if(-not $lf.EndsWith("`n")){ $lf+="`n" }; [IO.File]::WriteAllText($path,$lf,(Utf8NoBom)) }
+function AppendUtf8Lf([string]$path,[string]$line){ EnsureDir (Split-Path -Parent $path); $enc=(Utf8NoBom); $lf=($line -replace "`r`n","`n") -replace "`r","`n"; if(-not $lf.EndsWith("`n")){ $lf+="`n" }; [IO.File]::AppendAllText($path,$lf,$enc) }
+
+# Canonical JSON (stable key ordering) -> ConvertTo-Json -Compress. UTF-8 no BOM. Receipt hash is SHA256(canon_json + LF).
+function Canon($v){
+  if($null -eq $v){ return $null }
+  if($v -is [string] -or $v -is [int] -or $v -is [long] -or $v -is [double] -or $v -is [decimal] -or $v -is [bool]){ return $v }
+  if($v -is [datetime]){ return $v.ToUniversalTime().ToString("o") }
+  if($v -is [System.Collections.IDictionary]){
+    $keys=@($v.Keys | ForEach-Object { [string]$_ } | Sort-Object)
+    $o=[ordered]@{}
+    foreach($k in $keys){ $o[$k] = Canon $v[$k] }
+    return $o
+  }
+  if($v -is [System.Collections.IEnumerable] -and -not ($v -is [string])){
+    $a=@()
+    foreach($x in $v){ $a += ,(Canon $x) }
+    return $a
+  }
+  return ([string]$v)
+}
+function ToCanonJson($v){ (Canon $v) | ConvertTo-Json -Depth 50 -Compress }
+
+function Sha256HexBytes([byte[]]$b){ if($null -eq $b){ $b=[byte[]]@() }; $sha=[System.Security.Cryptography.SHA256]::Create(); try { $h=$sha.ComputeHash($b); $sb=New-Object System.Text.StringBuilder; foreach($x in $h){ [void]$sb.Append($x.ToString("x2")) }; return $sb.ToString() } finally { $sha.Dispose() } }
+function Sha256HexTextLf([string]$s){ $b=[Text.Encoding]::UTF8.GetBytes(($s + "`n")); return (Sha256HexBytes $b) }
+
+function ReceiptPath([string]$RepoRoot){ Join-Path $RepoRoot "proofs\receipts\storage.ndjson" }
+function EmitReceipt([string]$RepoRoot,[hashtable]$Obj){
+  $rp = ReceiptPath $RepoRoot
+  $json = ToCanonJson $Obj
+  $rh = Sha256HexTextLf $json
+  $o2 = @{}; foreach($k in $Obj.Keys){ $o2[$k] = $Obj[$k] }; $o2["receipt_hash"] = $rh
+  AppendUtf8Lf $rp (ToCanonJson $o2)
+  return $rh
+}
+
+function MakeDeviceId($d){
+  $u = ""
+  try { if($d.UniqueId){ $u = [string]$d.UniqueId } } catch { $u = "" }
+  $base = ("disk_number=" + $d.Number + "|unique_id=" + $u + "|size=" + $d.Size + "|name=" + $d.FriendlyName)
+  $h = Sha256HexTextLf $base
+  return ("win.disk.v1:" + $d.Number + ":" + $h)
+}
+
+function ListDisks(){
+  $rows = New-Object System.Collections.Generic.List[object]
+  $ds = Get-Disk | Sort-Object Number
+  foreach($d in @($ds)){
+    $id = MakeDeviceId $d
+    $u = ""; try { if($d.UniqueId){ $u = [string]$d.UniqueId } } catch { $u = "" }
+    $bus = ""; try { if($d.BusType){ $bus = [string]$d.BusType } } catch { $bus = "" }
+    $row = [pscustomobject]@{ DiskNumber=$d.Number; DeviceId=$id; FriendlyName=$d.FriendlyName; BusType=$bus; SizeBytes=$d.Size; PartitionStyle=$d.PartitionStyle; IsBoot=$d.IsBoot; IsSystem=$d.IsSystem; UniqueId=$u }
+    [void]$rows.Add($row)
+  }
+  return $rows
+}
+
+function PickDisk([string]$DeviceId,[int]$DiskNumber){
+  $ds = Get-Disk | Sort-Object Number
+  if($DiskNumber -ge 0){
+    $d = $ds | Where-Object { $_.Number -eq $DiskNumber } | Select-Object -First 1
+    if(-not $d){ Die ("DISK_NOT_FOUND: " + $DiskNumber) }
+    return $d
+  }
+  if([string]::IsNullOrWhiteSpace($DeviceId)){ Die "MISSING_TARGET: pass -DiskNumber or -DeviceId" }
+  $hits = @()
+  foreach($d in @($ds)){ if((MakeDeviceId $d) -eq $DeviceId){ $hits += ,$d } }
+  if(@($hits).Count -ne 1){ Die ("DEVICEID_NOT_UNIQUE_OR_NOT_FOUND: count=" + @($hits).Count) }
+  return $hits[0]
+}
+
+function Get-AvailableDriveLetter(){
+  $used = @(@(Get-Volume | Where-Object { $_.DriveLetter } | ForEach-Object { ([string]$_.DriveLetter).ToUpperInvariant() }))
+  foreach($c in "D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"){
+    if(-not ($used -contains $c)){ return $c }
+  }
+  Die "NO_FREE_DRIVE_LETTER"
+}
+
+function PrepareSinglePartition([int]$DiskNumber){
+  $d = Get-Disk -Number $DiskNumber -ErrorAction Stop
+  $parts = Get-Partition -DiskNumber $DiskNumber -ErrorAction SilentlyContinue
+  foreach($p in @($parts)){ try { Remove-Partition -DiskNumber $DiskNumber -PartitionNumber $p.PartitionNumber -Confirm:$false -ErrorAction Stop } catch { } }
+  try { Clear-Disk -Number $DiskNumber -RemoveData -Confirm:$false -ErrorAction Stop | Out-Null } catch { }
+  try { Initialize-Disk -Number $DiskNumber -PartitionStyle MBR -ErrorAction Stop | Out-Null } catch { }
+  $letter = Get-AvailableDriveLetter
+  $np = New-Partition -DiskNumber $DiskNumber -UseMaximumSize -AssignDriveLetter -ErrorAction Stop
+  $cur = ""; try { if($np.DriveLetter){ $cur = ([string]$np.DriveLetter).ToUpperInvariant() } } catch { $cur = "" }
+  if([string]::IsNullOrWhiteSpace($cur) -or ($cur -ne $letter)){ Set-Partition -DiskNumber $DiskNumber -PartitionNumber $np.PartitionNumber -NewDriveLetter $letter -ErrorAction Stop | Out-Null }
+  return $letter
+}
+
+function FormatFat32([string]$DriveLetter,[string]$Label,[string]$FallbackTool){
+  $dl = ([string]$DriveLetter).ToUpperInvariant()
+  $ok = $false
+  $cmd = Join-Path $env:SystemRoot "System32\cmd.exe"
+  if(Test-Path -LiteralPath $cmd){
+    $args = "/c format " + $dl + ": /FS:FAT32 /Q /V:""" + $Label + """ /Y"
+    $p = Start-Process -FilePath $cmd -ArgumentList $args -NoNewWindow -Wait -PassThru
+    if($p.ExitCode -eq 0){ $ok = $true }
+  }
+  if(-not $ok){
+    if(-not [string]::IsNullOrWhiteSpace($FallbackTool) -and (Test-Path -LiteralPath $FallbackTool)){
+      $p2 = Start-Process -FilePath $FallbackTool -ArgumentList ($dl + ":") -NoNewWindow -Wait -PassThru
+      if($p2.ExitCode -ne 0){ Die ("FAT32_TOOL_FAILED exit=" + $p2.ExitCode) }
+      $ok = $true
+    } else {
+      Die ("FAT32_FAILED_AND_NO_TOOL: tried format.com; missing tool at " + $FallbackTool)
+    }
+  }
+  try { Set-Volume -DriveLetter $dl -NewFileSystemLabel $Label -ErrorAction Stop | Out-Null } catch { }
+}
+
+$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+if([string]::IsNullOrWhiteSpace($Fat32ToolPath)){ $Fat32ToolPath = Join-Path $RepoRoot "tools\fat32format.exe" }
+EnsureDir (Join-Path $RepoRoot "proofs\receipts")
+
+if($Cmd -eq "list"){
+  $rows = ListDisks
+  $rows | Format-Table DiskNumber,DeviceId,FriendlyName,BusType,SizeBytes,PartitionStyle,IsBoot,IsSystem -AutoSize
+  $obj = [ordered]@{ schema="storage.receipt.v1"; action="list"; time_utc=[DateTime]::UtcNow.ToString("o"); host=$env:COMPUTERNAME; disk_count=@($rows).Count }
+  [void](EmitReceipt $RepoRoot $obj)
+  return
+}
+
+if($Cmd -ne "format"){ Die ("UNKNOWN_CMD: " + $Cmd) }
+if([string]::IsNullOrWhiteSpace($Fs)){ Die "MISSING_FS: pass -Fs fat32|exfat|ntfs" }
+
+# Require elevation (disk ops).
+$id = [Security.Principal.WindowsIdentity]::GetCurrent()
+$p  = New-Object Security.Principal.WindowsPrincipal($id)
+if(-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ Die "ADMIN_REQUIRED: run PowerShell as Administrator for format operations" }
+
+$d = PickDisk -DeviceId $DeviceId -DiskNumber $DiskNumber
+$did = MakeDeviceId $d
+Write-Host ("PICKED_DISK: #" + $d.Number + " " + $d.FriendlyName + " device_id=" + $did) -ForegroundColor Cyan
+if($d.IsBoot -or $d.IsSystem){ Die ("SAFETY_BLOCK_SYSTEM_DISK: #" + $d.Number) }
+if([string]::IsNullOrWhiteSpace($IUnderstand)){ Die ("SAFETY_BLOCK: pass -IUnderstand ERASE_DISK_" + $d.Number) }
+if($IUnderstand -ne ("ERASE_DISK_" + $d.Number)){ Die ("SAFETY_BLOCK: token must be exactly ERASE_DISK_" + $d.Number) }
+
+$t0 = [DateTime]::UtcNow.ToString("o")
+$letter = PrepareSinglePartition -DiskNumber $d.Number
+Write-Host ("PARTITION_OK: " + $letter + ":") -ForegroundColor Green
+
+if($Fs -eq "exfat"){
+  Write-Host ("FORMAT_EXFAT: " + $letter + ": label=" + $Label) -ForegroundColor Cyan
+  Format-Volume -DriveLetter $letter -FileSystem exFAT -NewFileSystemLabel $Label -Force -Confirm:$false | Out-Null
+} elseif($Fs -eq "ntfs"){
+  Write-Host ("FORMAT_NTFS: " + $letter + ": label=" + $Label) -ForegroundColor Cyan
+  Format-Volume -DriveLetter $letter -FileSystem NTFS -NewFileSystemLabel $Label -Force -Confirm:$false | Out-Null
+} elseif($Fs -eq "fat32"){
+  Write-Host ("FORMAT_FAT32: " + $letter + ": label=" + $Label) -ForegroundColor Cyan
+  FormatFat32 -DriveLetter $letter -Label $Label -FallbackTool $Fat32ToolPath
+} else {
+  Die ("UNSUPPORTED_FS: " + $Fs)
+}
+
+$t1 = [DateTime]::UtcNow.ToString("o")
+$vol = Get-Volume -DriveLetter $letter -ErrorAction Stop
+$obj = [ordered]@{
+  schema="storage.receipt.v1"; action="format";
+  time_start_utc=$t0; time_end_utc=$t1; host=$env:COMPUTERNAME;
+  disk_number=$d.Number; device_id=$did; friendly_name=$d.FriendlyName; size_bytes=$d.Size;
+  fs=$Fs; label=$Label; drive_letter=($letter + ":");
+  result_fs=$vol.FileSystem; result_label=$vol.FileSystemLabel;
+  fat32_tool_path=$Fat32ToolPath
+}
+$rh = EmitReceipt $RepoRoot $obj
+Write-Host ("FORMAT_OK: " + $letter + ": fs=" + $vol.FileSystem + " label=" + $vol.FileSystemLabel) -ForegroundColor Green
+Write-Host ("RECEIPT_OK: " + $rh) -ForegroundColor Green

@@ -1,0 +1,2 @@
+cb7dfeca3d86e59e19a740367e49a8b05c4dedb91c4e9c9fcb66a0c5b333ed12
+single-tenant/device_agent/device/ANAKIN

@@ -1,9 +1,26 @@
-﻿.venv/
+﻿# Python build artifacts
 __pycache__/
 *.pyc
-.pytest_cache/
+*.pyo
+*.pyd
+*.egg-info/
 dist/
 build/
-.DS_Store
-.last-port
+.venv/
+venv/
 
+# Local temp / scratch
+.tmp/
+tmp/
+lib/
+
+# Generated / transient scripts (keep only canonical ones)
+scripts/_clipboard_clean*.ps1
+scripts/_patch_*.ps1
+scripts/_repair_*.ps1
+scripts/_rewrite_*.ps1
+scripts/_ld_*.ps1
+scripts/_write_*.ps1
+
+# Backups
+*.bak

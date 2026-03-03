@@ -1,0 +1,1 @@
+{"schema":"commitment.v1","producer":"legacy_doctor","producer_instance":"ANAKIN","event_type":"legacy_doctor.dev.commit.v1","event_time":"2026-02-02T17:04:50.035Z","prev_links":[],"content_ref":"sealed","strength":"evidence"}
