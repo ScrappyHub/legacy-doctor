@@ -1,0 +1,659 @@
+LD-STORAGE-02A — Owned FAT32 Formatter
+What this work item is
+
+LD-STORAGE-02A adds a Legacy Doctor owned FAT32 formatter so FAT32 formatting of large removable media does not depend on:
+
+Windows format size policy
+
+third-party formatter executables
+
+GUI tools
+
+ad-hoc shell commands
+
+This formatter must become part of Legacy Doctor’s Tier-0 storage instrument so the tool can deterministically prepare removable media for legacy and modern devices while emitting auditable receipts.
+
+This is specifically for:
+
+SD / microSD
+
+USB flash devices
+
+removable SSD/HDD media where FAT32 is desired
+
+“express card” style prep workflows
+
+future curated device profiles
+
+Tier-0 contract
+
+The owned FAT32 formatter must:
+
+work offline
+
+run under PS5.1 + StrictMode
+
+be deterministic
+
+require explicit destructive intent
+
+emit append-only receipts
+
+verify what it wrote
+
+never silently mutate the wrong disk
+
+support media larger than 32GB
+
+be standalone first, with optional Archive Recall / Triad integration later
+
+Non-goals for LD-STORAGE-02A
+
+This work item does not yet include:
+
+exFAT owned formatter
+
+NTFS owned formatter
+
+GPT multi-partition authoring
+
+device-specific content loading
+
+premium curated load profiles
+
+Archive Recall packet export
+
+Triad restore execution
+
+filesystem repair beyond formatter verification
+
+full file-level indexing/library ingest
+
+Those remain later WBS items.
+
+Functional specification
+Command surface
+
+Legacy Doctor storage surface will gain a new explicit command path.
+
+Recommended command names:
+
+-Cmd plan-format-fat32
+
+-Cmd format-fat32-owned
+
+Alternative if you want to preserve the existing format surface:
+
+-Cmd format -Fs fat32 -Formatter owned
+
+But the cleaner Tier-0 contract is explicit command naming.
+
+Required parameters
+
+For destructive owned FAT32 format:
+
+-RepoRoot
+
+-Cmd format-fat32-owned
+
+target selector:
+
+-DiskNumber <int> or
+
+-DeviceId <string>
+
+-Label <string>
+
+-IUnderstand "ERASE_DISK_<n>"
+
+later:
+
+-ClusterKiB <int>
+
+-AutoElevate
+
+-Plan
+
+-WhatIf
+
+Safety rules
+
+Owned FAT32 format must refuse execution unless all are true:
+
+process is elevated
+
+target resolves to exactly one disk
+
+target is not boot disk
+
+target is not system disk
+
+user passed exact destructive token
+
+disk is removable or explicitly override-gated later
+
+there is a successful preflight plan object
+
+partition table/layout verification succeeds before and after writes
+
+Output
+
+On success:
+
+console token:
+
+FORMAT_FAT32_OWNED_OK
+
+receipt appended to:
+
+proofs\receipts\storage.ndjson
+
+stable verification summary:
+
+MBR present
+
+partition type correct
+
+FAT32 boot sector valid
+
+FSInfo valid
+
+backup boot sector valid
+
+FAT count valid
+
+root cluster valid
+
+On failure:
+
+deterministic failure token / reason code
+
+receipt appended with ok=false
+
+no silent partial success claims
+
+On-disk format spec (Tier-0 target)
+Partitioning model
+
+For Tier-0 owned FAT32, lock this initial policy:
+
+Partition style: MBR
+
+Partition count: 1
+
+Partition type: FAT32 LBA (0x0C)
+
+Alignment: 1 MiB boundary
+
+Partition starts at: LBA 2048
+
+Partition consumes: remainder of disk minus reserved tail if needed
+
+Active flag: false by default
+
+This keeps behavior simple and broadly compatible.
+
+FAT32 profile v1
+
+Initial owned FAT32 profile:
+
+bytes/sector: 512
+
+sectors/cluster:
+
+choose deterministically by volume size
+
+reserved sectors:
+
+standard FAT32 reserved region, deterministic constant
+
+FAT count: 2
+
+root directory cluster: 2
+
+media descriptor: standard removable media value
+
+FSInfo sector: present and valid
+
+backup boot sector: present and valid
+
+volume label:
+
+uppercase
+
+FAT-safe sanitized
+
+max 11 chars
+
+volume serial:
+
+deterministic, not clock-derived
+
+Deterministic cluster sizing rule
+
+Lock a simple first rule:
+
+<= 32 GiB → 16 KiB or 32 KiB
+
+> 32 GiB and <= 512 GiB → 32 KiB
+
+later override possible via explicit parameter
+
+For your immediate use case, 256 GB → 32 KiB clusters.
+
+Deterministic volume serial rule
+
+Do not use current time.
+
+Use deterministic derivation from target facts, for example:
+
+VolumeSerial = first 4 bytes of SHA-256("fat32|disk_number|device_id|partition_start_lba|partition_size_lba|label")
+
+This keeps re-runs reproducible for the same exact plan.
+
+Verification contract
+
+Owned FAT32 formatter is not complete unless it verifies its own writes.
+
+Verify-after-write checks
+
+Immediately after writing, re-open raw disk and verify:
+
+MBR
+
+signature 0x55AA
+
+one primary partition present
+
+type = 0x0C
+
+start LBA matches plan
+
+size LBA matches plan
+
+FAT32 boot sector
+
+jump instruction valid
+
+OEM field present
+
+bytes/sector = 512
+
+sectors/cluster = expected
+
+reserved sector count = expected
+
+FAT count = 2
+
+total sectors = expected
+
+FAT size = expected
+
+root cluster = 2
+
+FSInfo sector number matches plan
+
+backup boot sector number matches plan
+
+boot signature 0x55AA
+
+FSInfo
+
+lead signature valid
+
+structure signature valid
+
+trailing signature valid
+
+free cluster and next free fields acceptable
+
+Backup boot sector
+
+present and matches primary boot sector where required
+
+FAT regions
+
+FAT#1 and FAT#2 exist
+
+cluster 0/1 reserved entries valid
+
+root cluster chain initialized correctly
+
+Root directory
+
+cluster 2 readable
+
+volume label entry valid if written
+
+Verify token
+
+Success token:
+
+FAT32_VERIFY_OK
+
+Failure token examples:
+
+FAT32_VERIFY_FAIL:MBR_SIGNATURE
+
+FAT32_VERIFY_FAIL:PARTITION_TYPE
+
+FAT32_VERIFY_FAIL:BOOT_BPS
+
+FAT32_VERIFY_FAIL:FSINFO_SIGNATURE
+
+FAT32_VERIFY_FAIL:FAT_MIRROR
+
+FAT32_VERIFY_FAIL:ROOT_CLUSTER
+
+Receipt schema requirements
+
+Extend your current storage.receipt.v1 discipline with owned formatter fields.
+
+Plan receipt
+
+Action:
+
+plan-format-fat32-owned
+
+Fields:
+
+target disk number
+
+device id
+
+size bytes
+
+partition style
+
+partition start lba
+
+partition size lba
+
+sectors per cluster
+
+bytes per sector
+
+fat count
+
+fat size sectors
+
+reserved sectors
+
+root cluster
+
+label sanitized
+
+formatter=owned
+
+ok=true/false
+
+Format receipt
+
+Action:
+
+format-fat32-owned
+
+Fields:
+
+everything from plan
+
+execution start/end
+
+result filesystem expected=FAT32
+
+verification status
+
+verification hash summary
+
+receipt_hash
+
+Failure receipt
+
+Action:
+
+format-fat32-owned-fail
+
+Fields:
+
+target
+
+stage
+
+reason_code
+
+ok=false
+
+WBS
+LD-STORAGE-02A.01 — Spec lock
+
+Status: RED
+
+Deliverables:
+
+docs/LEGACY_DOCTOR_FAT32_OWNED_SPEC_v1.md
+
+cluster sizing rule locked
+
+partition profile locked
+
+receipt fields locked
+
+verification reason codes locked
+
+LD-STORAGE-02A.02 — Raw device I/O helpers
+
+Status: RED
+
+Deliverables:
+
+open raw disk safely
+
+read sector range
+
+write sector range
+
+deterministic byte helpers
+
+strict bounds checks
+
+explicit admin gate
+
+Notes:
+
+no writes unless destructive token already validated
+
+LD-STORAGE-02A.03 — MBR writer
+
+Status: RED
+
+Deliverables:
+
+protective wipe of partition metadata region
+
+deterministic MBR generation
+
+partition entry generation
+
+signature write
+
+read-back verification
+
+LD-STORAGE-02A.04 — FAT32 layout calculator
+
+Status: RED
+
+Deliverables:
+
+compute partition geometry
+
+compute reserved sectors
+
+compute FAT size
+
+compute cluster count
+
+choose sectors/cluster deterministically
+
+reject invalid geometry
+
+LD-STORAGE-02A.05 — FAT32 structure writer
+
+Status: RED
+
+Deliverables:
+
+primary boot sector
+
+FSInfo sector
+
+backup boot sector
+
+FAT#1
+
+FAT#2
+
+root dir initialization
+
+optional label entry
+
+LD-STORAGE-02A.06 — Verify engine
+
+Status: RED
+
+Deliverables:
+
+MBR verifier
+
+boot sector verifier
+
+FSInfo verifier
+
+FAT verifier
+
+root cluster verifier
+
+deterministic reason codes
+
+LD-STORAGE-02A.07 — Plan mode
+
+Status: RED
+
+Deliverables:
+
+non-destructive planning command
+
+prints exact intended geometry
+
+emits plan receipt
+
+no disk mutation
+
+LD-STORAGE-02A.08 — Format command
+
+Status: RED
+
+Deliverables:
+
+destructive execution command
+
+calls plan internally
+
+writes sectors
+
+verifies after write
+
+emits receipts
+
+LD-STORAGE-02A.09 — Safe test harness
+
+Status: RED
+
+Deliverables:
+
+disposable test media strategy
+
+preferably VHD/VHDX or image-file-backed tests first
+
+no real-device destructive selftests by default
+
+deterministic PASS/FAIL tokens
+
+LD-STORAGE-02A.10 — Golden vectors
+
+Status: RED
+
+Deliverables:
+
+boot sector expected bytes
+
+FSInfo expected bytes
+
+MBR expected bytes
+
+negative corruption cases
+
+verification expected outputs
+
+LD-STORAGE-02A.11 — Tier-0 runner
+
+Status: RED
+
+Deliverables:
+
+one command parse-gates scripts
+
+runs safe vectors
+
+runs formatter against disposable target only
+
+emits deterministic transcript
+
+prints LEGACY_DOCTOR_FAT32_OWNED_ALL_GREEN
+
+Implementation order (locked)
+
+Spec lock
+
+Raw read helpers
+
+Read-only verifier for existing FAT32 media
+
+Layout calculator
+
+MBR writer
+
+FAT32 structure writer
+
+Verify-after-write engine
+
+Plan mode
+
+Disposable-media selftest
+
+One runner
+
+Only then optional live-media usage
+
+This order matters. Do not start by writing live disks first.
+
+Definition of Done
+
+LD-STORAGE-02A is DONE when:
+
+Legacy Doctor can format removable media larger than 32GB as FAT32 without Windows formatter or third-party FAT32 exe
+
+formatter is deterministic and offline
+
+formatter requires explicit destructive intent
+
+formatter writes MBR + FAT32 structures correctly
+
+formatter verifies its own output non-mutatingly
+
+receipts are append-only and deterministic
+
+safe selftests pass on disposable targets
+
+one runner prints LEGACY_DOCTOR_FAT32_OWNED_ALL_GREEN
+
+no interactive/manual post-fixes are required
