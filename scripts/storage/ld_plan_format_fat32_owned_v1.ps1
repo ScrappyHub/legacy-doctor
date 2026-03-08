@@ -26,14 +26,6 @@ function PLAN-EnsureDir([string]$p){
 
 function PLAN-Utf8NoBom(){ New-Object System.Text.UTF8Encoding($false) }
 
-function PLAN-WriteUtf8NoBomLf([string]$path,[string]$text){
-  $dir = Split-Path -Parent $path
-  if($dir){ PLAN-EnsureDir $dir }
-  $t = ($text -replace "`r`n","`n") -replace "`r","`n"
-  if(-not $t.EndsWith("`n")){ $t += "`n" }
-  [IO.File]::WriteAllText($path,$t,(PLAN-Utf8NoBom))
-}
-
 function PLAN-AppendUtf8NoBomLf([string]$path,[string]$line){
   $dir = Split-Path -Parent $path
   if($dir){ PLAN-EnsureDir $dir }
@@ -144,7 +136,7 @@ function PLAN-SafetyCheck($d){
 
 function PLAN-EmitHumanPlan($summary){
   Write-Host ""
-  Write-Host "LEGACY DOCTOR — OWNED FAT32 FORMAT PLAN" -ForegroundColor Cyan
+  Write-Host "LEGACY DOCTOR - OWNED FAT32 FORMAT PLAN" -ForegroundColor Cyan
   Write-Host "--------------------------------------------------"
   Write-Host ("DiskNumber        : " + $summary.DiskNumber)
   Write-Host ("DeviceId          : " + $summary.DeviceId)
