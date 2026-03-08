@@ -32,22 +32,32 @@ function LDFAT-UpperAsciiLabel([string]$Label){
   } else {
     $x = "SDCARD"
   }
+
   $x = $x.ToUpperInvariant()
   $x = ($x -replace '[^A-Z0-9_\-]','')
-  if([string]::IsNullOrWhiteSpace($x)){ $x = "SDCARD" }
-  if($x.Length -gt 11){ $x = $x.Substring(0,11) }
+
+  if([string]::IsNullOrWhiteSpace($x)){
+    $x = "SDCARD"
+  }
+
+  if($x.Length -gt 11){
+    $x = $x.Substring(0,11)
+  }
+
   return $x
 }
 
 function LDFAT-UInt32FromSha256Prefix([string]$Text){
   $enc = New-Object System.Text.UTF8Encoding($false)
   $bytes = $enc.GetBytes($Text)
+
   $sha = [System.Security.Cryptography.SHA256]::Create()
   try {
     $h = $sha.ComputeHash($bytes)
   } finally {
     $sha.Dispose()
   }
+
   return [UInt32](
     $h[0] -bor
     ($h[1] -shl 8) -bor
@@ -57,46 +67,62 @@ function LDFAT-UInt32FromSha256Prefix([string]$Text){
 }
 
 function LDFAT-AlignUp([UInt64]$Value,[UInt64]$Alignment){
-  if($Alignment -eq 0){ LDFAT-Die "BAD_ARG" "Alignment must be > 0" }
+  if($Alignment -eq 0){
+    LDFAT-Die "BAD_ARG" "Alignment must be > 0"
+  }
+
   $r = $Value % $Alignment
-  if($r -eq 0){ return $Value }
+  if($r -eq 0){
+    return $Value
+  }
+
   return ($Value + ($Alignment - $r))
 }
 
-function LDFAT-ChooseSectorsPerCluster([UInt64]$PartitionSizeBytes,[int]$BytesPerSector,[int]$ClusterKiB){
+function LDFAT-ChooseSectorsPerCluster(
+  [UInt64]$PartitionSizeBytes,
+  [int]$BytesPerSector,
+  [int]$ClusterKiB
+){
   LDFAT-RequirePositiveUInt64 "PartitionSizeBytes" $PartitionSizeBytes
   LDFAT-RequirePositiveInt "BytesPerSector" $BytesPerSector
 
   if($ClusterKiB -gt 0){
-    $clusterBytes = [UInt64]$ClusterKiB * 1024UL
+    $clusterBytes = ([UInt64]$ClusterKiB) * ([UInt64]1024)
+
     if(($clusterBytes % [UInt64]$BytesPerSector) -ne 0){
       LDFAT-Die "BAD_CLUSTER_SIZE" ("ClusterKiB=" + $ClusterKiB + " not aligned to sector size " + $BytesPerSector)
     }
+
     $spc = [int]($clusterBytes / [UInt64]$BytesPerSector)
+
     if(@(1,2,4,8,16,32,64,128) -notcontains $spc){
       LDFAT-Die "BAD_CLUSTER_SIZE" ("unsupported sectors/cluster=" + $spc)
     }
+
     return $spc
   }
 
   $giB = [double]$PartitionSizeBytes / 1GB
+
   if($giB -le 32.0){
-    # lock initial simple policy: 32KiB for <=32GiB too, unless later refined
-    $clusterBytes = 32KB
+    $clusterBytes = [UInt64](32KB)
   } elseif($giB -le 512.0){
-    $clusterBytes = 32KB
+    $clusterBytes = [UInt64](32KB)
   } else {
     LDFAT-Die "PARTITION_TOO_LARGE" ("Tier-0 profile currently supports up to 512GiB; got " + [string]$giB + " GiB")
   }
 
-  if(($clusterBytes % $BytesPerSector) -ne 0){
+  if(($clusterBytes % [UInt64]$BytesPerSector) -ne 0){
     LDFAT-Die "BAD_CLUSTER_SIZE" ("clusterBytes=" + $clusterBytes + " not aligned to sector size " + $BytesPerSector)
   }
 
-  $spc2 = [int]($clusterBytes / $BytesPerSector)
+  $spc2 = [int]($clusterBytes / [UInt64]$BytesPerSector)
+
   if(@(1,2,4,8,16,32,64,128) -notcontains $spc2){
     LDFAT-Die "BAD_CLUSTER_SIZE" ("unsupported sectors/cluster=" + $spc2)
   }
+
   return $spc2
 }
 
@@ -111,20 +137,21 @@ function LDFAT-ComputeFatSizeSectors(
   LDFAT-Require($SectorsPerCluster -gt 0) "BAD_ARG" "SectorsPerCluster must be > 0"
   LDFAT-Require($FatCount -gt 0) "BAD_ARG" "FatCount must be > 0"
 
-  # Iterative FAT size calculation
   $fatSz = [UInt64]1
-  for($i=0; $i -lt 32; $i++){
-    $dataSectors = $PartitionSectors - [UInt64]$ReservedSectors - ([UInt64]$FatCount * $fatSz)
+
+  for($i = 0; $i -lt 32; $i++){
+    $dataSectors = $PartitionSectors - [UInt64]$ReservedSectors - (([UInt64]$FatCount) * $fatSz)
     LDFAT-Require($dataSectors -gt 0) "LAYOUT_INVALID" "data sectors <= 0"
+
     $clusterCount = [UInt64][Math]::Floor([double]$dataSectors / [double]$SectorsPerCluster)
 
-    # FAT32: 4 bytes per cluster entry; include reserved entries
-    $fatBytes = ($clusterCount + 2UL) * 4UL
+    $fatBytes = ($clusterCount + [UInt64]2) * [UInt64]4
     $newFatSz = [UInt64][Math]::Ceiling([double]$fatBytes / 512.0)
 
     if($newFatSz -eq $fatSz){
       return $fatSz
     }
+
     $fatSz = $newFatSz
   }
 
@@ -138,8 +165,9 @@ function LDFAT-ComputeClusterCount(
   [UInt32]$FatSizeSectors,
   [UInt32]$SectorsPerCluster
 ){
-  $dataSectors = $PartitionSectors - [UInt64]$ReservedSectors - ([UInt64]$FatCount * [UInt64]$FatSizeSectors)
+  $dataSectors = $PartitionSectors - [UInt64]$ReservedSectors - (([UInt64]$FatCount) * ([UInt64]$FatSizeSectors))
   LDFAT-Require($dataSectors -gt 0) "LAYOUT_INVALID" "data sectors <= 0"
+
   return [UInt64][Math]::Floor([double]$dataSectors / [double]$SectorsPerCluster)
 }
 
@@ -155,37 +183,50 @@ function LDFAT-NewPlan(
   LDFAT-RequirePositiveInt "BytesPerSector" $BytesPerSector
   LDFAT-Require($BytesPerSector -eq 512) "UNSUPPORTED_BPS" ("Tier-0 currently locks bytes/sector=512; got " + $BytesPerSector)
 
-  # Locked policy v1
-  $partitionStyle   = "MBR"
-  $partitionTypeHex = "0x0C"
-  $partitionType    = 12
+  $partitionStyle    = "MBR"
+  $partitionTypeHex  = "0x0C"
+  $partitionType     = 12
   $partitionStartLba = [UInt64]2048
-  $fatCount         = [UInt32]2
-  $reservedSectors  = [UInt32]32
-  $rootCluster      = [UInt32]2
-  $fsInfoSector     = [UInt16]1
-  $backupBootSector = [UInt16]6
-  $mediaDescriptor  = [byte]0xF8
-  $oemName          = "MSWIN4.1"
-  $volumeLabel      = LDFAT-UpperAsciiLabel $Label
+  $fatCount          = [UInt32]2
+  $reservedSectors   = [UInt32]32
+  $rootCluster       = [UInt32]2
+  $fsInfoSector      = [UInt16]1
+  $backupBootSector  = [UInt16]6
+  $mediaDescriptor   = [byte]0xF8
+  $oemName           = "MSWIN4.1"
+  $volumeLabel       = LDFAT-UpperAsciiLabel $Label
 
   $diskSectors = [UInt64][Math]::Floor([double]$DiskSizeBytes / [double]$BytesPerSector)
   LDFAT-Require($diskSectors -gt $partitionStartLba) "DISK_TOO_SMALL" ("disk sectors=" + $diskSectors)
 
   $partitionSectors = $diskSectors - $partitionStartLba
-  LDFAT-Require($partitionSectors -gt 65536) "DISK_TOO_SMALL" ("partition sectors too small for FAT32 profile")
+  LDFAT-Require($partitionSectors -gt 65536) "DISK_TOO_SMALL" "partition sectors too small for FAT32 profile"
 
   $partitionSizeBytes = $partitionSectors * [UInt64]$BytesPerSector
-  $sectorsPerCluster = [UInt32](LDFAT-ChooseSectorsPerCluster -PartitionSizeBytes $partitionSizeBytes -BytesPerSector $BytesPerSector -ClusterKiB $ClusterKiB)
+
+  $sectorsPerCluster = [UInt32](LDFAT-ChooseSectorsPerCluster `
+    -PartitionSizeBytes $partitionSizeBytes `
+    -BytesPerSector $BytesPerSector `
+    -ClusterKiB $ClusterKiB)
+
   $clusterSizeBytes = [UInt64]$sectorsPerCluster * [UInt64]$BytesPerSector
 
-  $fatSizeSectors = [UInt32](LDFAT-ComputeFatSizeSectors -PartitionSectors $partitionSectors -ReservedSectors $reservedSectors -SectorsPerCluster $sectorsPerCluster -FatCount $fatCount)
-  $clusterCount   = LDFAT-ComputeClusterCount -PartitionSectors $partitionSectors -ReservedSectors $reservedSectors -FatCount $fatCount -FatSizeSectors $fatSizeSectors -SectorsPerCluster $sectorsPerCluster
+  $fatSizeSectors = [UInt32](LDFAT-ComputeFatSizeSectors `
+    -PartitionSectors $partitionSectors `
+    -ReservedSectors $reservedSectors `
+    -SectorsPerCluster $sectorsPerCluster `
+    -FatCount $fatCount)
 
-  # FAT32 minimum cluster-count threshold
+  $clusterCount = LDFAT-ComputeClusterCount `
+    -PartitionSectors $partitionSectors `
+    -ReservedSectors $reservedSectors `
+    -FatCount $fatCount `
+    -FatSizeSectors $fatSizeSectors `
+    -SectorsPerCluster $sectorsPerCluster
+
   LDFAT-Require($clusterCount -ge 65525) "NOT_FAT32_GEOMETRY" ("cluster_count=" + $clusterCount)
 
-  $dataStartLba = $partitionStartLba + [UInt64]$reservedSectors + ([UInt64]$fatCount * [UInt64]$fatSizeSectors)
+  $dataStartLba = $partitionStartLba + [UInt64]$reservedSectors + (([UInt64]$fatCount) * ([UInt64]$fatSizeSectors))
   $rootDirFirstLba = $dataStartLba
 
   $serialSeed = ("fat32|disk_number=" + $DiskNumber + "|device_id=" + $DeviceId + "|partition_start_lba=" + $partitionStartLba + "|partition_size_lba=" + $partitionSectors + "|label=" + $volumeLabel)
@@ -233,7 +274,10 @@ function LDFAT-NewPlan(
 }
 
 function LDFAT-PlanSummary([hashtable]$Plan){
-  if($null -eq $Plan){ LDFAT-Die "NULL_PLAN" "Plan" }
+  if($null -eq $Plan){
+    LDFAT-Die "NULL_PLAN" "Plan"
+  }
+
   return [pscustomobject]@{
     DiskNumber        = $Plan.disk_number
     DeviceId          = $Plan.device_id
@@ -255,23 +299,34 @@ function LDFAT-PlanSummary([hashtable]$Plan){
 }
 
 function LDFAT-BuildMbrSector([hashtable]$Plan){
-  if($null -eq $Plan){ LDFAT-Die "NULL_PLAN" "Plan" }
+  if($null -eq $Plan){
+    LDFAT-Die "NULL_PLAN" "Plan"
+  }
 
   $sector = New-Object byte[] 512
 
-  # Single partition entry at offset 446
   $entry = 446
-  $sector[$entry + 0] = [byte]0x00          # boot flag
-  $sector[$entry + 1] = [byte]0x00          # CHS start (ignored)
+  $sector[$entry + 0] = [byte]0x00
+  $sector[$entry + 1] = [byte]0x00
   $sector[$entry + 2] = [byte]0x02
   $sector[$entry + 3] = [byte]0x00
-  $sector[$entry + 4] = [byte]$Plan.partition_type
-  $sector[$entry + 5] = [byte]0xFE          # CHS end placeholder
+  $sector[$entry + 4] = [byte]([int]$Plan["partition_type"])
+  $sector[$entry + 5] = [byte]0xFE
   $sector[$entry + 6] = [byte]0xFF
   $sector[$entry + 7] = [byte]0xFF
 
-  $start = [UInt32]$Plan.partition_start_lba
-  $size  = [UInt32]$Plan.partition_size_lba
+  $start64 = [UInt64]$Plan["partition_start_lba"]
+  $size64  = [UInt64]$Plan["partition_size_lba"]
+
+  if($start64 -gt [UInt64][UInt32]::MaxValue){
+    LDFAT-Die "MBR_START_TOO_LARGE" ([string]$start64)
+  }
+  if($size64 -gt [UInt64][UInt32]::MaxValue){
+    LDFAT-Die "MBR_SIZE_TOO_LARGE" ([string]$size64)
+  }
+
+  $start = [UInt32]$start64
+  $size  = [UInt32]$size64
 
   $sector[$entry + 8]  = [byte]($start -band 0xFF)
   $sector[$entry + 9]  = [byte](($start -shr 8) -band 0xFF)
@@ -285,6 +340,7 @@ function LDFAT-BuildMbrSector([hashtable]$Plan){
 
   $sector[510] = 0x55
   $sector[511] = 0xAA
+
   return $sector
 }
 
@@ -297,7 +353,8 @@ function LDFAT-ExportModuleInfo {
       "LDFAT-ChooseSectorsPerCluster",
       "LDFAT-NewPlan",
       "LDFAT-PlanSummary",
-      "LDFAT-BuildMbrSector"
+      "LDFAT-BuildMbrSector",
+      "LDFAT-ExportModuleInfo"
     )
     profile = [ordered]@{
       fat_type = "FAT32"
