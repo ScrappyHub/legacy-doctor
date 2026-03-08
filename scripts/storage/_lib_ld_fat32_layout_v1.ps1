@@ -144,7 +144,6 @@ function LDFAT-ComputeFatSizeSectors(
     LDFAT-Require($dataSectors -gt 0) "LAYOUT_INVALID" "data sectors <= 0"
 
     $clusterCount = [UInt64][Math]::Floor([double]$dataSectors / [double]$SectorsPerCluster)
-
     $fatBytes = ($clusterCount + [UInt64]2) * [UInt64]4
     $newFatSz = [UInt64][Math]::Ceiling([double]$fatBytes / 512.0)
 
@@ -232,7 +231,7 @@ function LDFAT-NewPlan(
   $serialSeed = ("fat32|disk_number=" + $DiskNumber + "|device_id=" + $DeviceId + "|partition_start_lba=" + $partitionStartLba + "|partition_size_lba=" + $partitionSectors + "|label=" + $volumeLabel)
   $volumeSerial = LDFAT-UInt32FromSha256Prefix $serialSeed
 
-  $plan = [ordered]@{
+  return [ordered]@{
     schema = "ld.fat32.plan.v1"
 
     disk_number = [int]$DiskNumber
@@ -269,8 +268,6 @@ function LDFAT-NewPlan(
 
     ok = $true
   }
-
-  return $plan
 }
 
 function LDFAT-PlanSummary([hashtable]$Plan){
@@ -279,22 +276,22 @@ function LDFAT-PlanSummary([hashtable]$Plan){
   }
 
   return [pscustomobject]@{
-    DiskNumber        = $Plan.disk_number
-    DeviceId          = $Plan.device_id
-    PartitionStyle    = $Plan.partition_style
-    PartitionType     = $Plan.partition_type_hex
-    StartLba          = $Plan.partition_start_lba
-    SizeLba           = $Plan.partition_size_lba
-    BytesPerSector    = $Plan.bytes_per_sector
-    SectorsPerCluster = $Plan.sectors_per_cluster
-    ClusterSizeBytes  = $Plan.cluster_size_bytes
-    ReservedSectors   = $Plan.reserved_sectors
-    FatCount          = $Plan.fat_count
-    FatSizeSectors    = $Plan.fat_size_sectors
-    ClusterCount      = $Plan.cluster_count
-    RootCluster       = $Plan.root_cluster
-    Label             = $Plan.volume_label
-    VolumeSerial      = ("0x" + ([UInt32]$Plan.volume_serial).ToString("X8"))
+    DiskNumber        = [int]$Plan["disk_number"]
+    DeviceId          = [string]$Plan["device_id"]
+    PartitionStyle    = [string]$Plan["partition_style"]
+    PartitionType     = [string]$Plan["partition_type_hex"]
+    StartLba          = [UInt64]$Plan["partition_start_lba"]
+    SizeLba           = [UInt64]$Plan["partition_size_lba"]
+    BytesPerSector    = [UInt16]$Plan["bytes_per_sector"]
+    SectorsPerCluster = [UInt32]$Plan["sectors_per_cluster"]
+    ClusterSizeBytes  = [UInt64]$Plan["cluster_size_bytes"]
+    ReservedSectors   = [UInt16]$Plan["reserved_sectors"]
+    FatCount          = [UInt16]$Plan["fat_count"]
+    FatSizeSectors    = [UInt32]$Plan["fat_size_sectors"]
+    ClusterCount      = [UInt64]$Plan["cluster_count"]
+    RootCluster       = [UInt32]$Plan["root_cluster"]
+    Label             = [string]$Plan["volume_label"]
+    VolumeSerial      = ("0x" + ([UInt32]$Plan["volume_serial"]).ToString("X8"))
   }
 }
 
@@ -303,18 +300,21 @@ function LDFAT-BuildMbrSector([hashtable]$Plan){
     LDFAT-Die "NULL_PLAN" "Plan"
   }
 
+  if(-not (Get-Command LD-SetU32LE -ErrorAction SilentlyContinue)){
+    LDFAT-Die "MISSING_DEP" "LD-SetU32LE not loaded; dot-source _lib_ld_rawdisk_v1.ps1 first"
+  }
+  if(-not (Get-Command LD-SetU16LE -ErrorAction SilentlyContinue)){
+    LDFAT-Die "MISSING_DEP" "LD-SetU16LE not loaded; dot-source _lib_ld_rawdisk_v1.ps1 first"
+  }
+
   $sector = New-Object byte[] 512
 
-  $entry = 446
-  $sector[$entry + 0] = [byte]0x00
-  $sector[$entry + 1] = [byte]0x00
-  $sector[$entry + 2] = [byte]0x02
-  $sector[$entry + 3] = [byte]0x00
-  $sector[$entry + 4] = [byte]([int]$Plan["partition_type"])
-  $sector[$entry + 5] = [byte]0xFE
-  $sector[$entry + 6] = [byte]0xFF
-  $sector[$entry + 7] = [byte]0xFF
+  $entryOffset = 446
+  $startOffset = 454
+  $sizeOffset  = 458
+  $sigOffset   = 510
 
+  $partitionType = [byte]([int]$Plan["partition_type"])
   $start64 = [UInt64]$Plan["partition_start_lba"]
   $size64  = [UInt64]$Plan["partition_size_lba"]
 
@@ -325,21 +325,21 @@ function LDFAT-BuildMbrSector([hashtable]$Plan){
     LDFAT-Die "MBR_SIZE_TOO_LARGE" ([string]$size64)
   }
 
-  $start = [UInt32]$start64
-  $size  = [UInt32]$size64
+  $start32 = [UInt32]$start64
+  $size32  = [UInt32]$size64
 
-  $sector[$entry + 8]  = [byte]($start -band 0xFF)
-  $sector[$entry + 9]  = [byte](($start -shr 8) -band 0xFF)
-  $sector[$entry + 10] = [byte](($start -shr 16) -band 0xFF)
-  $sector[$entry + 11] = [byte](($start -shr 24) -band 0xFF)
+  $sector[$entryOffset + 0] = [byte]0x00
+  $sector[$entryOffset + 1] = [byte]0x00
+  $sector[$entryOffset + 2] = [byte]0x02
+  $sector[$entryOffset + 3] = [byte]0x00
+  $sector[$entryOffset + 4] = $partitionType
+  $sector[$entryOffset + 5] = [byte]0xFE
+  $sector[$entryOffset + 6] = [byte]0xFF
+  $sector[$entryOffset + 7] = [byte]0xFF
 
-  $sector[$entry + 12] = [byte]($size -band 0xFF)
-  $sector[$entry + 13] = [byte](($size -shr 8) -band 0xFF)
-  $sector[$entry + 14] = [byte](($size -shr 16) -band 0xFF)
-  $sector[$entry + 15] = [byte](($size -shr 24) -band 0xFF)
-
-  $sector[510] = 0x55
-  $sector[511] = 0xAA
+  LD-SetU32LE -Buffer $sector -Offset $startOffset -Value $start32
+  LD-SetU32LE -Buffer $sector -Offset $sizeOffset  -Value $size32
+  LD-SetU16LE -Buffer $sector -Offset $sigOffset   -Value 0xAA55
 
   return $sector
 }
