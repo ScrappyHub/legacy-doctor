@@ -118,43 +118,38 @@ function LDBOOT-BuildBootSector([hashtable]$Plan){
 
   $sector = New-Object byte[] 512
 
-  # Jump + OEM
   $sector[0] = [byte]0xEB
   $sector[1] = [byte]0x58
   $sector[2] = [byte]0x90
   LDBOOT-CopyBytes -Buffer $sector -Offset 3 -Bytes (LDBOOT-AsciiPadded -Text $oem -Length 8)
 
-  # BPB
   LD-SetU16LE -Buffer $sector -Offset 11 -Value $bps
   $sector[13] = $spc
   LD-SetU16LE -Buffer $sector -Offset 14 -Value $rsv
   $sector[16] = $fatCount
-  LD-SetU16LE -Buffer $sector -Offset 17 -Value 0      # RootEntCnt
-  LD-SetU16LE -Buffer $sector -Offset 19 -Value 0      # TotSec16
+  LD-SetU16LE -Buffer $sector -Offset 17 -Value 0
+  LD-SetU16LE -Buffer $sector -Offset 19 -Value 0
   $sector[21] = $mediaDescriptor
-  LD-SetU16LE -Buffer $sector -Offset 22 -Value 0      # FATSz16
-  LD-SetU16LE -Buffer $sector -Offset 24 -Value 63     # SecPerTrk placeholder
-  LD-SetU16LE -Buffer $sector -Offset 26 -Value 255    # NumHeads placeholder
-  LD-SetU32LE -Buffer $sector -Offset 28 -Value 2048   # HiddenSectors
+  LD-SetU16LE -Buffer $sector -Offset 22 -Value 0
+  LD-SetU16LE -Buffer $sector -Offset 24 -Value 63
+  LD-SetU16LE -Buffer $sector -Offset 26 -Value 255
+  LD-SetU32LE -Buffer $sector -Offset 28 -Value 2048
   LD-SetU32LE -Buffer $sector -Offset 32 -Value $totalSectors32
 
-  # FAT32 extended BPB
   LD-SetU32LE -Buffer $sector -Offset 36 -Value $fatSize
-  LD-SetU16LE -Buffer $sector -Offset 40 -Value 0      # ExtFlags
-  LD-SetU16LE -Buffer $sector -Offset 42 -Value 0      # FSVer
+  LD-SetU16LE -Buffer $sector -Offset 40 -Value 0
+  LD-SetU16LE -Buffer $sector -Offset 42 -Value 0
   LD-SetU32LE -Buffer $sector -Offset 44 -Value $rootCluster
   LD-SetU16LE -Buffer $sector -Offset 48 -Value $fsInfoSector
   LD-SetU16LE -Buffer $sector -Offset 50 -Value $backupBootSector
 
-  # Reserved 12 bytes 52..63 left zero
-  $sector[64] = [byte]0x80                              # Drive number
-  $sector[65] = [byte]0x00                              # Reserved
-  $sector[66] = [byte]0x29                              # Boot signature
+  $sector[64] = [byte]0x80
+  $sector[65] = [byte]0x00
+  $sector[66] = [byte]0x29
   LD-SetU32LE -Buffer $sector -Offset 67 -Value $volumeSerial
   LDBOOT-CopyBytes -Buffer $sector -Offset 71 -Bytes (LDBOOT-AsciiPadded -Text $label -Length 11)
   LDBOOT-CopyBytes -Buffer $sector -Offset 82 -Bytes (LDBOOT-AsciiPadded -Text "FAT32" -Length 8)
 
-  # Minimal boot code area left zeroed
   LD-SetU16LE -Buffer $sector -Offset 510 -Value 0xAA55
 
   return $sector
@@ -171,16 +166,17 @@ function LDBOOT-BuildFsInfoSector([hashtable]$Plan){
   }
 
   $clusterCount = [UInt64]$Plan["cluster_count"]
-  $freeClusters = [UInt32]($clusterCount - 1)   # root cluster allocated
+  $freeClusters = [UInt32]($clusterCount - 1)
   $nextFree = [UInt32]3
+  $trailSig = [UInt32]2857697280
 
   $sector = New-Object byte[] 512
 
-  LD-SetU32LE -Buffer $sector -Offset 0   -Value 0x41615252
-  LD-SetU32LE -Buffer $sector -Offset 484 -Value 0x61417272
+  LD-SetU32LE -Buffer $sector -Offset 0   -Value 1096897106
+  LD-SetU32LE -Buffer $sector -Offset 484 -Value 1631679090
   LD-SetU32LE -Buffer $sector -Offset 488 -Value $freeClusters
   LD-SetU32LE -Buffer $sector -Offset 492 -Value $nextFree
-  LD-SetU32LE -Buffer $sector -Offset 508 -Value 0xAA550000
+  LD-SetU32LE -Buffer $sector -Offset 508 -Value $trailSig
 
   return $sector
 }
@@ -201,12 +197,9 @@ function LDBOOT-BuildFatSector0([hashtable]$Plan){
 
   $sector = New-Object byte[] 512
 
-  # FAT32 entry 0: media descriptor + reserved high bits
-  $entry0 = [UInt32](0x0FFFFF00 -bor $mediaDescriptor)
-  # FAT32 entry 1: reserved
-  $entry1 = [UInt32]0x0FFFFFFF
-  # FAT32 entry 2/root cluster: end-of-chain
-  $entry2 = [UInt32]0x0FFFFFFF
+  $entry0 = [UInt32](268435200 + [UInt32]$mediaDescriptor)
+  $entry1 = [UInt32]268435455
+  $entry2 = [UInt32]268435455
 
   LD-SetU32LE -Buffer $sector -Offset 0 -Value $entry0
   LD-SetU32LE -Buffer $sector -Offset 4 -Value $entry1
@@ -224,7 +217,6 @@ function LDBOOT-BuildRootDirSector0([hashtable]$Plan){
   $label = [string]$Plan["volume_label"]
   $labelBytes = LDBOOT-AsciiPadded -Text $label -Length 11
 
-  # Volume label directory entry
   LDBOOT-CopyBytes -Buffer $sector -Offset 0 -Bytes $labelBytes
   $sector[11] = [byte]0x08
 
