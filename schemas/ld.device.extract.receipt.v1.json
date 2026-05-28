@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ld.device.extract.receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_type",
+    "ok",
+    "repo_root",
+    "image_path",
+    "manifest_path",
+    "extract_root",
+    "mode",
+    "output_count"
+  ],
+  "properties": {
+    "schema": { "type": "string", "const": "ld.device.extract.receipt.v1" },
+    "event_type": { "type": "string", "const": "ld.device.extract.receipt.v1" },
+    "ok": { "type": "boolean" },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "device_id": { "type": "string" },
+    "disk_number": { "type": ["integer", "null"], "minimum": 0 },
+    "image_path": { "type": "string", "minLength": 1 },
+    "manifest_path": { "type": "string", "minLength": 1 },
+    "extract_root": { "type": "string", "minLength": 1 },
+    "mode": {
+      "type": "string",
+      "enum": ["full_copy", "byte_ranges"]
+    },
+    "output_count": { "type": "integer", "minimum": 0 },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
