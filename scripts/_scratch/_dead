@@ -2,72 +2,12 @@ param([Parameter(Mandatory=$true)][string]$RepoRoot)
 Set-StrictMode -Version Latest
 $ErrorActionPreference="Stop"
 
-function EnsureDir([string]$p){ if([string]::IsNullOrWhiteSpace($p)){ return }; if(-not (Test-Path -LiteralPath $p -PathType Container)){ New-Item -ItemType Directory -Force -Path $p | Out-Null } }
-function Utf8NoBom(){ New-Object System.Text.UTF8Encoding($false) }
-function WriteUtf8NoBomLf([string]$path,[string[]]$lines){
-  $dir = Split-Path -Parent $path
-  if($dir){ EnsureDir $dir }
-  $t = (@($lines) -join "`n")
-  $t = ($t -replace "`r`n","`n") -replace "`r","`n"
-  if(-not $t.EndsWith("`n")){ $t += "`n" }
-  [IO.File]::WriteAllText($path,$t,(Utf8NoBom))
-  if(-not (Test-Path -LiteralPath $path -PathType Leaf)){ throw ("WRITE_FAILED: " + $path) }
-}
-function ParseGate([string]$path){
-  $tok=$null; $err=$null
-  [void][System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tok,[ref]$err)
-  if($err -and $err.Count -gt 0){ $e=$err[0]; throw ("PARSE_GATE_FAIL: {0}:{1}:{2}: {3}" -f $path,$e.Extent.StartLineNumber,$e.Extent.StartColumnNumber,$e.Message) }
-}
-
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
-$ScriptsDir  = Join-Path $RepoRoot "scripts"
-$SelftestDir = Join-Path $ScriptsDir "selftest"
-EnsureDir $SelftestDir
-$SelftestPath = Join-Path $SelftestDir "_selftest_ld_storage_v1.ps1"
-$RunPath      = Join-Path $ScriptsDir "_RUN_legacy_doctor_tier0_selftests_v1.ps1"
-
-$T = New-Object System.Collections.Generic.List[string]
-[void]$T.Add("param([Parameter(Mandatory=$true)][string]$RepoRoot)")
-[void]$T.Add("Set-StrictMode -Version Latest")
-[void]$T.Add("$ErrorActionPreference = ""Stop""")
-[void]$T.Add("")
-[void]$T.Add('function Die([string]$m){ throw $m }')
-[void]$T.Add("")
-[void]$T.Add("$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path")
-[void]$T.Add("$Storage = Join-Path $RepoRoot ""scripts\storage\ld_storage_v1.ps1""")
-[void]$T.Add("if(-not (Test-Path -LiteralPath $Storage -PathType Leaf)){ Die (""MISSING: "" + $Storage) }")
-[void]$T.Add("$ReceiptsDir = Join-Path $RepoRoot ""proofs\receipts""")
-[void]$T.Add("$ReceiptPath = Join-Path $ReceiptsDir ""storage.ndjson""")
-[void]$T.Add("$len0 = 0")
-[void]$T.Add("if(Test-Path -LiteralPath $ReceiptPath -PathType Leaf){ $len0 = (Get-Item -LiteralPath $ReceiptPath).Length }")
-[void]$T.Add("Write-Host (""SELFTEST: list -> "" + $Storage) -ForegroundColor Yellow")
-[void]$T.Add("$PSExe = (Get-Command powershell.exe -ErrorAction Stop).Source")
-[void]$T.Add("& $PSExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Storage -RepoRoot $RepoRoot -Cmd list | Out-Host")
-[void]$T.Add("if(-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)){ Die (""RECEIPT_MISSING: "" + $ReceiptPath) }")
-[void]$T.Add("$len1 = (Get-Item -LiteralPath $ReceiptPath).Length")
-[void]$T.Add("if($len1 -le $len0){ Die (""RECEIPT_NOT_APPENDED: before="" + $len0 + "" after="" + $len1) }")
-[void]$T.Add("")
-[void]$T.Add("Write-Host ""SELFTEST_OK"" -ForegroundColor Green")
-[void]$T.Add("Write-Output ""FULL_GREEN""")
-WriteUtf8NoBomLf $SelftestPath @($T.ToArray())
-ParseGate $SelftestPath
-
-$U = New-Object System.Collections.Generic.List[string]
-[void]$U.Add("param([Parameter(Mandatory=$true)][string]$RepoRoot)")
-[void]$U.Add("Set-StrictMode -Version Latest")
-[void]$U.Add("$ErrorActionPreference = ""Stop""")
-[void]$U.Add("")
-[void]$U.Add("$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path")
-[void]$U.Add("$Selftest = Join-Path $RepoRoot ""scripts\selftest\_selftest_ld_storage_v1.ps1""")
-[void]$U.Add("if(-not (Test-Path -LiteralPath $Selftest -PathType Leaf)){ throw (""MISSING: "" + $Selftest) }")
-[void]$U.Add("$PSExe = (Get-Command powershell.exe -ErrorAction Stop).Source")
-[void]$U.Add("Write-Host (""RUN: "" + $Selftest) -ForegroundColor Yellow")
-[void]$U.Add("$out = & $PSExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Selftest -RepoRoot $RepoRoot")
-[void]$U.Add("foreach($x in @(@($out))){ [Console]::Out.WriteLine($x) }")
-[void]$U.Add("if((@(@($out)) -join ""`n"") -notmatch ""FULL_GREEN""){ throw ""SELFTEST_MISSING_FULL_GREEN"" }")
-[void]$U.Add("Write-Output ""FULL_GREEN""")
-WriteUtf8NoBomLf $RunPath @($U.ToArray())
-ParseGate $RunPath
-
-Write-Output ("PATCH_OK SELFTEST=" + $SelftestPath)
-Write-Output ("PATCH_OK RUNNER=" + $RunPath)
+$Selftest = Join-Path $RepoRoot "scripts\selftest\_selftest_ld_storage_v1.ps1"
+if(-not (Test-Path -LiteralPath $Selftest -PathType Leaf)){ throw ("MISSING: " + $Selftest) }
+$PSExe = (Get-Command powershell.exe -ErrorAction Stop).Source
+Write-Host ("RUN: " + $Selftest) -ForegroundColor Yellow
+$out = & $PSExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Selftest -RepoRoot $RepoRoot
+foreach($x in @(@($out))){ [Console]::Out.WriteLine($x) }
+if((@(@($out)) -join "`n") -notmatch "FULL_GREEN"){ throw "SELFTEST_MISSING_FULL_GREEN" }
+Write-Output "TIER0_ALL_GREEN"
