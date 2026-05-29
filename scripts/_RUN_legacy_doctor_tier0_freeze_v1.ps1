@@ -191,8 +191,7 @@ $ArtifactsToHash = @(
   (Join-Path $RepoRoot "schemas\ld.device.health.receipt.v1.json"),
   (Join-Path $RepoRoot "schemas\ld.device.backup.receipt.v1.json"),
   (Join-Path $RepoRoot "schemas\ld.device.extract.receipt.v1.json"),
-  (Join-Path $RepoRoot "schemas\ld.packet.verify.receipt.v1.json"),
-  (Join-Path $RepoRoot "proofs\acquire\selftest_inputs\synthetic_source.bin")
+  (Join-Path $RepoRoot "schemas\ld.packet.verify.receipt.v1.json")
 )
 
 foreach($p in @($ScriptsToParse)){
@@ -345,6 +344,14 @@ $HashTargets = @(
   $MetaPath
 ) + $ScriptsToParse + $ArtifactsToHash
 
+# FREEZE_SYNTHETIC_SOURCE_AFTER_RUNNERS_V3
+$GeneratedSyntheticSource = Join-Path $RepoRoot "proofs\acquire\selftest_inputs\synthetic_source.bin"
+if(-not (Test-Path -LiteralPath $GeneratedSyntheticSource -PathType Leaf)){
+  Die "GENERATED_ARTIFACT_MISSING" $GeneratedSyntheticSource
+}
+
+Write-Output ("ARTIFACT_GENERATED_OK: " + $GeneratedSyntheticSource)
+$HashTargets = @($HashTargets) + @($GeneratedSyntheticSource)
 $HashLines = @()
 foreach($f in @($HashTargets | Select-Object -Unique)){
   if(-not (Test-Path -LiteralPath $f -PathType Leaf)){
