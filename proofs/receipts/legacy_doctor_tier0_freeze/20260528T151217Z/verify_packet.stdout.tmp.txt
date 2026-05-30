@@ -1,0 +1,17 @@
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_packetize_case_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.packet.verify.receipt.v1.json
+LD_PACKET_ID: 53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+LD_PACKET_PATH: C:\dev\legacy-doctor\packets\53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+LD_PACKETIZE_OK
+VERIFY_PACKET_RECEIPT_HASH: 41e89aca24b80451b2eb1118ac6e0c4e4398c08f1a62021cbd04227a2aadb9c4
+VERIFY_PACKET_ID: 53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+{"event_type":"ld.packet.verify.receipt.v1","ok":true,"packet_id":"53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26","packet_root":"C:\\dev\\legacy-doctor\\packets\\53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26","repo_root":"C:\\dev\\legacy-doctor","schema":"ld.packet.verify.receipt.v1","verification_result":"VERIFY_PACKET_OK"}
+LD_VERIFY_PACKET_OK
+PASS: packet verify positive
+PASS: packet tamper negative
+SELFTEST_LD_VERIFY_PACKET_OK
+FULL_GREEN
+LEGACY_DOCTOR_VERIFY_PACKET_ALL_GREEN

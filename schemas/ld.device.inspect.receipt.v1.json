@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ld.device.inspect.receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_type",
+    "ok",
+    "repo_root",
+    "device_id",
+    "disk_number",
+    "friendly_name",
+    "bus_type",
+    "partition_style",
+    "is_boot",
+    "is_system",
+    "operational_status",
+    "health_status",
+    "size_bytes",
+    "partitions",
+    "volumes",
+    "preservation_recommendation"
+  ],
+  "properties": {
+    "schema": { "type": "string", "const": "ld.device.inspect.receipt.v1" },
+    "event_type": { "type": "string", "const": "ld.device.inspect.receipt.v1" },
+    "ok": { "type": "boolean" },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "device_id": { "type": "string", "minLength": 1 },
+    "disk_number": { "type": "integer", "minimum": 0 },
+    "friendly_name": { "type": "string" },
+    "serial_number": { "type": "string" },
+    "bus_type": { "type": "string" },
+    "partition_style": { "type": "string" },
+    "is_boot": { "type": "boolean" },
+    "is_system": { "type": "boolean" },
+    "operational_status": { "type": "string" },
+    "health_status": { "type": "string" },
+    "size_bytes": { "type": "integer", "minimum": 0 },
+    "partitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["partition_number", "size_bytes"],
+        "properties": {
+          "partition_number": { "type": "integer", "minimum": 1 },
+          "drive_letter": { "type": "string" },
+          "type": { "type": "string" },
+          "size_bytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["drive_letter"],
+        "properties": {
+          "drive_letter": { "type": "string", "minLength": 1, "maxLength": 1 },
+          "file_system": { "type": "string" },
+          "file_system_label": { "type": "string" },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "size_remaining_bytes": { "type": "integer", "minimum": 0 },
+          "drive_type": { "type": "string" }
+        }
+      }
+    },
+    "preservation_recommendation": {
+      "type": "string",
+      "enum": [
+        "READ_ONLY_BACKUP_FIRST",
+        "SAFE_FILE_COPY",
+        "RAW_IMAGE_RECOMMENDED",
+        "FORMAT_ONLY_AFTER_CAPTURE",
+        "NO_MEDIA_PRESENT"
+      ]
+    },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
