@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ld.device.backup.receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_type",
+    "ok",
+    "repo_root",
+    "device_id",
+    "source_kind",
+    "source_path",
+    "mode",
+    "image_path",
+    "manifest_path",
+    "chunk_size_bytes",
+    "source_size_bytes",
+    "image_sha256",
+    "chunk_count"
+  ],
+  "properties": {
+    "schema": { "type": "string", "const": "ld.device.backup.receipt.v1" },
+    "event_type": { "type": "string", "const": "ld.device.backup.receipt.v1" },
+    "ok": { "type": "boolean" },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "device_id": { "type": "string", "minLength": 1 },
+    "disk_number": { "type": "integer", "minimum": 0 },
+    "source_kind": {
+      "type": "string",
+      "enum": ["physical_drive", "image_file"]
+    },
+    "source_path": { "type": "string", "minLength": 1 },
+    "mode": {
+      "type": "string",
+      "enum": ["raw_image", "file_copy"]
+    },
+    "image_path": { "type": "string", "minLength": 1 },
+    "manifest_path": { "type": "string", "minLength": 1 },
+    "chunk_size_bytes": { "type": "integer", "minimum": 1 },
+    "source_size_bytes": { "type": "integer", "minimum": 0 },
+    "image_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "chunk_count": { "type": "integer", "minimum": 0 },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

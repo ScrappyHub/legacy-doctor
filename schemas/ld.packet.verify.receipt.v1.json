@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ld.packet.verify.receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_type",
+    "ok",
+    "repo_root",
+    "packet_root",
+    "packet_id",
+    "verification_result"
+  ],
+  "properties": {
+    "schema": { "type": "string", "const": "ld.packet.verify.receipt.v1" },
+    "event_type": { "type": "string", "const": "ld.packet.verify.receipt.v1" },
+    "ok": { "type": "boolean" },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "packet_root": { "type": "string", "minLength": 1 },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "verification_result": {
+      "type": "string",
+      "enum": [
+        "VERIFY_PACKET_OK",
+        "VERIFY_PACKET_FAIL_MISSING_MANIFEST",
+        "VERIFY_PACKET_FAIL_MISSING_PACKET_ID",
+        "VERIFY_PACKET_FAIL_MISSING_SHA256SUMS",
+        "VERIFY_PACKET_FAIL_PACKET_ID_MISMATCH",
+        "VERIFY_PACKET_FAIL_SHA256SUMS_BAD_FORMAT",
+        "VERIFY_PACKET_FAIL_SHA256SUMS_FILE_MISSING",
+        "VERIFY_PACKET_FAIL_SHA256SUMS_HASH_MISMATCH"
+      ]
+    },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

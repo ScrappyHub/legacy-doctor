@@ -1,0 +1,22 @@
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_verify_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_verify_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_backup_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.verify.receipt.v1.json
+BACKUP_SOURCE: C:\dev\legacy-doctor\proofs\acquire\selftest_inputs\synthetic_source.bin
+BACKUP_IMAGE: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151230_368\image_20260528_151230_368.img
+BACKUP_MANIFEST: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151230_368\image_20260528_151230_368.manifest.json
+BACKUP_RECEIPT_HASH: 1d4c9e990cf3a535f13f4f00a7c4b7a1c1e46bc7d9f35f8b8e94d2652fe9ac2b
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.backup.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.manifest.json","mode":"raw_image","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.backup.receipt.v1","source_kind":"image_file","source_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\selftest_inputs\\synthetic_source.bin","source_size_bytes":1048576}
+LD_BACKUP_DEVICE_OK
+VERIFY_RECEIPT_HASH: 4d6be8adc27a9a02f61f50e35e0b5ab46c53f022a028cca132e404b76714f1b7
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.verify.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.manifest.json","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.verify.receipt.v1","verification_result":"VERIFY_OK"}
+LD_VERIFY_IMAGE_OK
+LD_VERIFY_IMAGE_FAIL:VERIFY_FAIL_CHUNK_HASH:index=0
+PASS: verify positive manifest/image match
+PASS: verify negative corruption detection
+SELFTEST_LD_VERIFY_IMAGE_OK
+FULL_GREEN
+LEGACY_DOCTOR_VERIFY_IMAGE_ALL_GREEN

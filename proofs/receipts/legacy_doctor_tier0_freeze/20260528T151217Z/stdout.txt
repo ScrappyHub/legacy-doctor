@@ -1,0 +1,141 @@
+RUNNER_START: inspect_device
+RUNNER_PATH: C:\dev\legacy-doctor\scripts\_RUN_legacy_doctor_inspect_device_v1.ps1
+RUNNER_EXIT: inspect_device: 0
+RUNNER_STDOUT_BEGIN: inspect_device
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_device_probe_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_health_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_inspect_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_inspect_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_device_probe_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_health_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_inspect_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.inspect.receipt.v1.json
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.health.receipt.v1.json
+INSPECT_PATH: C:\dev\legacy-doctor\proofs\receipts\device_inspect\disk_0_20260528_151221_788.inspect.json
+HEALTH_PATH: C:\dev\legacy-doctor\proofs\receipts\device_inspect\disk_0_20260528_151221_788.health.json
+INSPECT_RECEIPT_HASH: 2a7f1e71ee824d7d52024e36e589bb6cbfaf2d9f1322725b4f3f60da4472f408
+HEALTH_RECEIPT_HASH: a6d8458aa2ad7d72f651635ef7fb84c57c62b975e8faa2b6e87fe1a294f212ca
+{"schema":"ld.device.inspect.receipt.v1","event_type":"ld.device.inspect.receipt.v1","ok":true,"repo_root":"C:\\dev\\legacy-doctor","device_id":"win.disk.v1:0:c4a2d14572a073f9624203064f4fbfd2a5566e63268a460dc11758045af1181f","disk_number":0,"friendly_name":"ST2000DM008-2FR102","serial_number":"            ZK305RDS","bus_type":"SATA","partition_style":"GPT","is_boot":false,"is_system":false,"operational_status":"Online","health_status":"Healthy","size_bytes":2000398934016,"partitions":[{"partition_number":1,"drive_letter":"S","type":"Basic","size_bytes":2000397795328}],"volumes":[{"drive_letter":"S","file_system":"NTFS","file_system_label":"Big daddy","size_bytes":2000397791232,"size_remaining_bytes":153284415488,"drive_type":"Fixed"}],"preservation_recommendation":"RAW_IMAGE_RECOMMENDED"}
+{"schema":"ld.device.health.receipt.v1","event_type":"ld.device.health.receipt.v1","ok":true,"repo_root":"C:\\dev\\legacy-doctor","device_id":"win.disk.v1:0:c4a2d14572a073f9624203064f4fbfd2a5566e63268a460dc11758045af1181f","disk_number":0,"health_summary":"HEALTHY","signals":["WINDOWS_HEALTH:HEALTHY","WINDOWS_OPERATIONAL:ONLINE","VOLUME_S_FS_NTFS"],"preservation_recommendation":"RAW_IMAGE_RECOMMENDED"}
+LD_INSPECT_DEVICE_OK
+PASS: inspect receipt structure
+PASS: health receipt structure
+SELFTEST_LD_INSPECT_DEVICE_OK
+FULL_GREEN
+LEGACY_DOCTOR_INSPECT_DEVICE_ALL_GREEN
+
+RUNNER_STDOUT_END: inspect_device
+RUNNER_START: backup_device
+RUNNER_PATH: C:\dev\legacy-doctor\scripts\_RUN_legacy_doctor_backup_device_v1.ps1
+RUNNER_EXIT: backup_device: 0
+RUNNER_STDOUT_BEGIN: backup_device
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_acquire_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_backup_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_backup_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_backup_device_physical_guard_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_acquire_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_backup_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.backup.receipt.v1.json
+BACKUP_SOURCE: C:\dev\legacy-doctor\proofs\acquire\selftest_inputs\synthetic_source.bin
+BACKUP_IMAGE: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151225_939\image_20260528_151225_939.img
+BACKUP_MANIFEST: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151225_939\image_20260528_151225_939.manifest.json
+BACKUP_RECEIPT_HASH: 03bec3864a84d331ca3969c9394de956ee4187c15f1b95b22f3db0f714101e6b
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.backup.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151225_939\\image_20260528_151225_939.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151225_939\\image_20260528_151225_939.manifest.json","mode":"raw_image","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.backup.receipt.v1","source_kind":"image_file","source_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\selftest_inputs\\synthetic_source.bin","source_size_bytes":1048576}
+LD_BACKUP_DEVICE_OK
+PASS: backup receipt structure
+PASS: image hash matches source
+PASS: chunked manifest structure
+SELFTEST_LD_BACKUP_DEVICE_OK
+FULL_GREEN
+powershell.exe : ADMIN_REQUIRED:physical drive acquisition requires Administrator
+PASS: physical guard enforced
+LEGACY_DOCTOR_BACKUP_DEVICE_ALL_GREEN
+
+RUNNER_STDOUT_END: backup_device
+RUNNER_START: verify_image
+RUNNER_PATH: C:\dev\legacy-doctor\scripts\_RUN_legacy_doctor_verify_image_v1.ps1
+RUNNER_EXIT: verify_image: 0
+RUNNER_STDOUT_BEGIN: verify_image
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_verify_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_verify_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_backup_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.verify.receipt.v1.json
+BACKUP_SOURCE: C:\dev\legacy-doctor\proofs\acquire\selftest_inputs\synthetic_source.bin
+BACKUP_IMAGE: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151230_368\image_20260528_151230_368.img
+BACKUP_MANIFEST: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151230_368\image_20260528_151230_368.manifest.json
+BACKUP_RECEIPT_HASH: 1d4c9e990cf3a535f13f4f00a7c4b7a1c1e46bc7d9f35f8b8e94d2652fe9ac2b
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.backup.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.manifest.json","mode":"raw_image","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.backup.receipt.v1","source_kind":"image_file","source_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\selftest_inputs\\synthetic_source.bin","source_size_bytes":1048576}
+LD_BACKUP_DEVICE_OK
+VERIFY_RECEIPT_HASH: 4d6be8adc27a9a02f61f50e35e0b5ab46c53f022a028cca132e404b76714f1b7
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.verify.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151230_368\\image_20260528_151230_368.manifest.json","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.verify.receipt.v1","verification_result":"VERIFY_OK"}
+LD_VERIFY_IMAGE_OK
+LD_VERIFY_IMAGE_FAIL:VERIFY_FAIL_CHUNK_HASH:index=0
+PASS: verify positive manifest/image match
+PASS: verify negative corruption detection
+SELFTEST_LD_VERIFY_IMAGE_OK
+FULL_GREEN
+LEGACY_DOCTOR_VERIFY_IMAGE_ALL_GREEN
+
+RUNNER_STDOUT_END: verify_image
+RUNNER_START: extract_image
+RUNNER_PATH: C:\dev\legacy-doctor\scripts\_RUN_legacy_doctor_extract_image_v1.ps1
+RUNNER_EXIT: extract_image: 0
+RUNNER_STDOUT_BEGIN: extract_image
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_extract_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_extract_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_extract_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_extract_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_extract_image_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_backup_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.extract.receipt.v1.json
+BACKUP_SOURCE: C:\dev\legacy-doctor\proofs\acquire\selftest_inputs\synthetic_source.bin
+BACKUP_IMAGE: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151234_033\image_20260528_151234_033.img
+BACKUP_MANIFEST: C:\dev\legacy-doctor\proofs\acquire\image_20260528_151234_033\image_20260528_151234_033.manifest.json
+BACKUP_RECEIPT_HASH: e35e087b87a77d8dd7d8b93d469f911a8ba0ccfc8821c3392582563f76f1b6a7
+{"chunk_count":4,"chunk_size_bytes":262144,"device_id":"image.file.v1:8bcc700939743108f3b2ca270913f2bc1175e3bb314a043c53763743535add1a","disk_number":null,"event_type":"ld.device.backup.receipt.v1","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151234_033\\image_20260528_151234_033.img","image_sha256":"631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151234_033\\image_20260528_151234_033.manifest.json","mode":"raw_image","ok":true,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.backup.receipt.v1","source_kind":"image_file","source_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\selftest_inputs\\synthetic_source.bin","source_size_bytes":1048576}
+LD_BACKUP_DEVICE_OK
+EXTRACT_ROOT: C:\dev\legacy-doctor\proofs\extract\extract_20260528_151234_780
+EXTRACT_MANIFEST: C:\dev\legacy-doctor\proofs\extract\extract_20260528_151234_780\extract_20260528_151234_780.manifest.json
+EXTRACT_RECEIPT_HASH: 08b8e21dbfa65452cf4425204b7aa4c28d9e45c2edc29ed33eeac19af513e765
+{"device_id":"","disk_number":null,"event_type":"ld.device.extract.receipt.v1","extract_root":"C:\\dev\\legacy-doctor\\proofs\\extract\\extract_20260528_151234_780","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151234_033\\image_20260528_151234_033.img","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\extract\\extract_20260528_151234_780\\extract_20260528_151234_780.manifest.json","mode":"full_copy","ok":true,"output_count":1,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.extract.receipt.v1"}
+LD_EXTRACT_IMAGE_OK
+EXTRACT_ROOT: C:\dev\legacy-doctor\proofs\extract\extract_20260528_151235_561
+EXTRACT_MANIFEST: C:\dev\legacy-doctor\proofs\extract\extract_20260528_151235_561\extract_20260528_151235_561.manifest.json
+EXTRACT_RECEIPT_HASH: cf72211504ea53bf270e5d84fd92a991559b58f8ce37dfb720a9b2e53decaff8
+{"device_id":"","disk_number":null,"event_type":"ld.device.extract.receipt.v1","extract_root":"C:\\dev\\legacy-doctor\\proofs\\extract\\extract_20260528_151235_561","image_path":"C:\\dev\\legacy-doctor\\proofs\\acquire\\image_20260528_151234_033\\image_20260528_151234_033.img","manifest_path":"C:\\dev\\legacy-doctor\\proofs\\extract\\extract_20260528_151235_561\\extract_20260528_151235_561.manifest.json","mode":"byte_ranges","ok":true,"output_count":3,"repo_root":"C:\\dev\\legacy-doctor","schema":"ld.device.extract.receipt.v1"}
+LD_EXTRACT_IMAGE_OK
+PASS: full copy extract
+PASS: byte range extract
+Write-Host  CHECK: negative capture enforcement -ForegroundColor DarkGray
+PASS: negative missing ranges
+SELFTEST_LD_EXTRACT_IMAGE_OK
+FULL_GREEN
+LEGACY_DOCTOR_EXTRACT_IMAGE_ALL_GREEN
+
+RUNNER_STDOUT_END: extract_image
+RUNNER_START: verify_packet
+RUNNER_PATH: C:\dev\legacy-doctor\scripts\_RUN_legacy_doctor_verify_packet_v1.ps1
+RUNNER_EXIT: verify_packet: 0
+RUNNER_STDOUT_BEGIN: verify_packet
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_verify_packet_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_packetize_case_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.packet.verify.receipt.v1.json
+LD_PACKET_ID: 53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+LD_PACKET_PATH: C:\dev\legacy-doctor\packets\53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+LD_PACKETIZE_OK
+VERIFY_PACKET_RECEIPT_HASH: 41e89aca24b80451b2eb1118ac6e0c4e4398c08f1a62021cbd04227a2aadb9c4
+VERIFY_PACKET_ID: 53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26
+{"event_type":"ld.packet.verify.receipt.v1","ok":true,"packet_id":"53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26","packet_root":"C:\\dev\\legacy-doctor\\packets\\53f69e92625bed5a46f729c5f7649b3add04bbeb7a77043b810a3b85e329ef26","repo_root":"C:\\dev\\legacy-doctor","schema":"ld.packet.verify.receipt.v1","verification_result":"VERIFY_PACKET_OK"}
+LD_VERIFY_PACKET_OK
+PASS: packet verify positive
+PASS: packet tamper negative
+SELFTEST_LD_VERIFY_PACKET_OK
+FULL_GREEN
+LEGACY_DOCTOR_VERIFY_PACKET_ALL_GREEN
+
+RUNNER_STDOUT_END: verify_packet

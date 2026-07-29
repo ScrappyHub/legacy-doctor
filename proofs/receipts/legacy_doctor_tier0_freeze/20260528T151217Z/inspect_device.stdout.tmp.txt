@@ -1,0 +1,21 @@
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_device_probe_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_health_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_inspect_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\selftest\_selftest_ld_inspect_device_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_device_probe_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\_lib_ld_health_v1.ps1
+PARSE_OK: C:\dev\legacy-doctor\scripts\storage\ld_inspect_device_v1.ps1
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.inspect.receipt.v1.json
+SCHEMA_OK: C:\dev\legacy-doctor\schemas\ld.device.health.receipt.v1.json
+INSPECT_PATH: C:\dev\legacy-doctor\proofs\receipts\device_inspect\disk_0_20260528_151221_788.inspect.json
+HEALTH_PATH: C:\dev\legacy-doctor\proofs\receipts\device_inspect\disk_0_20260528_151221_788.health.json
+INSPECT_RECEIPT_HASH: 2a7f1e71ee824d7d52024e36e589bb6cbfaf2d9f1322725b4f3f60da4472f408
+HEALTH_RECEIPT_HASH: a6d8458aa2ad7d72f651635ef7fb84c57c62b975e8faa2b6e87fe1a294f212ca
+{"schema":"ld.device.inspect.receipt.v1","event_type":"ld.device.inspect.receipt.v1","ok":true,"repo_root":"C:\\dev\\legacy-doctor","device_id":"win.disk.v1:0:c4a2d14572a073f9624203064f4fbfd2a5566e63268a460dc11758045af1181f","disk_number":0,"friendly_name":"ST2000DM008-2FR102","serial_number":"            ZK305RDS","bus_type":"SATA","partition_style":"GPT","is_boot":false,"is_system":false,"operational_status":"Online","health_status":"Healthy","size_bytes":2000398934016,"partitions":[{"partition_number":1,"drive_letter":"S","type":"Basic","size_bytes":2000397795328}],"volumes":[{"drive_letter":"S","file_system":"NTFS","file_system_label":"Big daddy","size_bytes":2000397791232,"size_remaining_bytes":153284415488,"drive_type":"Fixed"}],"preservation_recommendation":"RAW_IMAGE_RECOMMENDED"}
+{"schema":"ld.device.health.receipt.v1","event_type":"ld.device.health.receipt.v1","ok":true,"repo_root":"C:\\dev\\legacy-doctor","device_id":"win.disk.v1:0:c4a2d14572a073f9624203064f4fbfd2a5566e63268a460dc11758045af1181f","disk_number":0,"health_summary":"HEALTHY","signals":["WINDOWS_HEALTH:HEALTHY","WINDOWS_OPERATIONAL:ONLINE","VOLUME_S_FS_NTFS"],"preservation_recommendation":"RAW_IMAGE_RECOMMENDED"}
+LD_INSPECT_DEVICE_OK
+PASS: inspect receipt structure
+PASS: health receipt structure
+SELFTEST_LD_INSPECT_DEVICE_OK
+FULL_GREEN
+LEGACY_DOCTOR_INSPECT_DEVICE_ALL_GREEN

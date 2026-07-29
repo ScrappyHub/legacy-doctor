@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ld.packet.receipt.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_type",
+    "ok",
+    "repo_root",
+    "packet_dir",
+    "packet_id",
+    "manifest_path",
+    "packet_id_path",
+    "sha256sums_path",
+    "payload_count"
+  ],
+  "properties": {
+    "schema": { "type": "string", "const": "ld.packet.receipt.v1" },
+    "event_type": { "type": "string", "const": "ld.packet.receipt.v1" },
+    "ok": { "type": "boolean" },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "packet_dir": { "type": "string", "minLength": 1 },
+    "packet_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "manifest_path": { "type": "string", "minLength": 1 },
+    "packet_id_path": { "type": "string", "minLength": 1 },
+    "sha256sums_path": { "type": "string", "minLength": 1 },
+    "payload_count": { "type": "integer", "minimum": 0 },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
