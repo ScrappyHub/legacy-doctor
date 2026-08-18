@@ -17,8 +17,11 @@ if($LASTEXITCODE -ne 0){ Die "READ_PROBE_EXIT_NONZERO" ([string]$LASTEXITCODE) }
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_READ_PROBE_OK"){
+if($text -notmatch "LD_DEVICE_READ_PROBE_(OK|UNAVAILABLE)"){
   Die "READ_PROBE_TOKEN_MISSING" ""
+}
+if($text -match "LD_DEVICE_READ_PROBE_UNAVAILABLE" -and ($text -notmatch '"ok":false' -or $text -notmatch '"availability":"unavailable"')){
+  Die "READ_FALSE_UNAVAILABLE" ""
 }
 
 if($text -notmatch '"destructive":false'){
@@ -32,4 +35,5 @@ if($text -notmatch '"write_test":false'){
 Write-Output $text
 Write-Output "PASS: read probe emitted"
 Write-Output "PASS: non-destructive flags present"
+Write-Output "PASS: unavailable discovery is explicit"
 Write-Output "SELFTEST_LD_STORAGE03_READ_PROBE_OK"

@@ -53,10 +53,19 @@ function ClassifyRow([object]$Disk,[object]$Partition,[object[]]$AccessPaths,[ob
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
 $diskList = @()
-if($DiskNumber -ge 0){
-  $diskList = @(Get-Disk -Number $DiskNumber -ErrorAction Stop)
-} else {
-  $diskList = @(Get-Disk | Sort-Object Number)
+$availability = "available"
+$errorCode = ""
+$errorMessage = ""
+try {
+  if($DiskNumber -ge 0){
+    $diskList = @(Get-Disk -Number $DiskNumber -ErrorAction Stop)
+  } else {
+    $diskList = @(Get-Disk -ErrorAction Stop | Sort-Object Number)
+  }
+} catch {
+  $availability = "unavailable"
+  $errorCode = "STORAGE_DISCOVERY_UNAVAILABLE"
+  $errorMessage = $_.Exception.Message
 }
 
 $rows = @()
@@ -140,7 +149,10 @@ foreach($disk in @($diskList)){
 $receipt = [ordered]@{
   schema = "ld.device.mount_state.receipt.v1"
   event_type = "ld.device.mount_state.receipt.v1"
-  ok = $true
+  ok = ($availability -eq "available")
+  availability = $availability
+  error_code = $errorCode
+  error = $errorMessage
   repo_root = $RepoRoot
   disk_filter = $(if($DiskNumber -ge 0){ [string]$DiskNumber } else { "all" })
   row_count = [int]$rows.Count
@@ -159,4 +171,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_MOUNT_STATE_PATH: " + $outPath)
 Write-Output ("DEVICE_MOUNT_STATE_ROWS: " + [string]$rows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_MOUNT_STATE_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_MOUNT_STATE_OK" }
+else { Write-Output "LD_DEVICE_MOUNT_STATE_UNAVAILABLE" }

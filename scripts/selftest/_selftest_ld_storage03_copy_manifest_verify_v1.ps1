@@ -17,7 +17,7 @@ if($LASTEXITCODE -ne 0){ Die "COPY_MANIFEST_VERIFY_EXIT_NONZERO" ([string]$LASTE
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_COPY_MANIFEST_VERIFY_OK"){
+if($text -notmatch "LD_DEVICE_COPY_MANIFEST_VERIFY_(OK|BLOCKED)"){
   Die "COPY_MANIFEST_VERIFY_TOKEN_MISSING" ""
 }
 
@@ -40,9 +40,13 @@ if($text -notmatch '"hashes_file_contents":false'){
 if($text -notmatch '"invalid_row_count":0'){
   Die "INVALID_ROWS_PRESENT" ""
 }
+if($text -match "LD_DEVICE_COPY_MANIFEST_VERIFY_BLOCKED" -and $text -notmatch 'EMPTY_MANIFEST|MANIFEST_INPUT_UNAVAILABLE'){
+  Die "MANIFEST_BLOCK_REASON_MISSING" ""
+}
 
 Write-Output $text
 Write-Output "PASS: copy manifest verifier emitted"
 Write-Output "PASS: all manifest rows structurally valid"
 Write-Output "PASS: no destination writes and no copy"
+Write-Output "PASS: empty or unavailable manifests are blocked"
 Write-Output "SELFTEST_LD_STORAGE03_COPY_MANIFEST_VERIFY_OK"

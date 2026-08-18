@@ -17,7 +17,7 @@ if($LASTEXITCODE -ne 0){ Die "COPY_MANIFEST_DRY_RUN_EXIT_NONZERO" ([string]$LAST
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_COPY_MANIFEST_DRY_RUN_OK"){
+if($text -notmatch "LD_DEVICE_COPY_MANIFEST_DRY_RUN_(OK|UNAVAILABLE)"){
   Die "COPY_MANIFEST_DRY_RUN_TOKEN_MISSING" ""
 }
 
@@ -37,11 +37,15 @@ if($text -notmatch '"hashes_file_contents":false'){
   Die "HASHES_FILE_CONTENTS_FALSE_MISSING" ""
 }
 
-if($text -notmatch "WOULD_COPY"){
+if($text -match "LD_DEVICE_COPY_MANIFEST_DRY_RUN_OK" -and $text -notmatch "WOULD_COPY"){
   Die "WOULD_COPY_MISSING" ""
+}
+if($text -match "LD_DEVICE_COPY_MANIFEST_DRY_RUN_UNAVAILABLE" -and ($text -notmatch '"ok":false' -or $text -notmatch '"manifest_row_count":0')){
+  Die "MANIFEST_FALSE_UNAVAILABLE" ""
 }
 
 Write-Output $text
 Write-Output "PASS: copy manifest dry-run emitted"
 Write-Output "PASS: no destination writes and no copy"
+Write-Output "PASS: unavailable enumeration produces no manifest"
 Write-Output "SELFTEST_LD_STORAGE03_COPY_MANIFEST_DRY_RUN_OK"

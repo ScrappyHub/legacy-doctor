@@ -119,6 +119,7 @@ if($LASTEXITCODE -ne 0){
 }
 
 $manifest = First-JsonObjectFromOutput -Output $out -Schema "ld.device.copy_manifest_dry_run.receipt.v1"
+$inputAvailable = SafeBool $manifest.ok
 
 $verifyRows = @()
 $validCount = 0
@@ -206,12 +207,18 @@ foreach($s in @($manifest.skipped_rows)){
   })
 }
 
-$overallOk = ($invalidCount -eq 0)
+$verificationErrors = @()
+if(-not $inputAvailable){ $verificationErrors = Add-Unique $verificationErrors "MANIFEST_INPUT_UNAVAILABLE" }
+if([int]$manifest.manifest_row_count -le 0){ $verificationErrors = Add-Unique $verificationErrors "EMPTY_MANIFEST" }
+if($invalidCount -gt 0){ $verificationErrors = Add-Unique $verificationErrors "INVALID_MANIFEST_ROWS" }
+$overallOk = (@($verificationErrors).Count -eq 0)
 
 $receipt = [ordered]@{
   schema = "ld.device.copy_manifest_verify.receipt.v1"
   event_type = "ld.device.copy_manifest_verify.receipt.v1"
   ok = [bool]$overallOk
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
+  verification_errors = @($verificationErrors)
   repo_root = $RepoRoot
   mode = "copy_manifest_verify"
   destructive = $false
@@ -243,4 +250,5 @@ Write-Output ("DEVICE_COPY_MANIFEST_VERIFY_PATH: " + $outPath)
 Write-Output ("DEVICE_COPY_MANIFEST_VERIFY_ROWS: " + [string]$verifyRows.Count)
 Write-Output ("DEVICE_COPY_MANIFEST_VERIFY_INVALID: " + [string]$invalidCount)
 Write-Output $json
-Write-Output "LD_DEVICE_COPY_MANIFEST_VERIFY_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_COPY_MANIFEST_VERIFY_OK" }
+else { Write-Output "LD_DEVICE_COPY_MANIFEST_VERIFY_BLOCKED" }

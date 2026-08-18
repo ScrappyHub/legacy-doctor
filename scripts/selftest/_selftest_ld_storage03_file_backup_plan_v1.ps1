@@ -17,7 +17,7 @@ if($LASTEXITCODE -ne 0){ Die "FILE_BACKUP_PLAN_EXIT_NONZERO" ([string]$LASTEXITC
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_FILE_BACKUP_PLAN_OK"){
+if($text -notmatch "LD_DEVICE_FILE_BACKUP_PLAN_(OK|UNAVAILABLE)"){
   Die "FILE_BACKUP_PLAN_TOKEN_MISSING" ""
 }
 
@@ -33,11 +33,15 @@ if($text -notmatch '"requires_destination":true'){
   Die "REQUIRES_DESTINATION_TRUE_MISSING" ""
 }
 
-if($text -notmatch "PLANNED_DRY_RUN_ONLY"){
+if($text -match "LD_DEVICE_FILE_BACKUP_PLAN_OK" -and $text -notmatch "PLANNED_DRY_RUN_ONLY"){
   Die "DRY_RUN_PLAN_MISSING" ""
+}
+if($text -match "LD_DEVICE_FILE_BACKUP_PLAN_UNAVAILABLE" -and $text -notmatch '"ok":false'){
+  Die "PLAN_FALSE_UNAVAILABLE" ""
 }
 
 Write-Output $text
 Write-Output "PASS: file backup plan emitted"
 Write-Output "PASS: dry-run only, no copy"
+Write-Output "PASS: unavailable readiness produces no plan"
 Write-Output "SELFTEST_LD_STORAGE03_FILE_BACKUP_PLAN_OK"

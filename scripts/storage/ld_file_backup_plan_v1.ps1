@@ -99,11 +99,14 @@ if($LASTEXITCODE -ne 0){
 }
 
 $readiness = First-JsonObjectFromOutput -Output $out -Schema "ld.device.backup_readiness.receipt.v1"
+$inputAvailable = SafeBool $readiness.ok
 
 $planRows = @()
 $skippedRows = @()
 
-foreach($r in @($readiness.rows)){
+$readinessRows = @()
+if($inputAvailable){ $readinessRows = @($readiness.rows) }
+foreach($r in @($readinessRows)){
   $drive = NormalizeDriveLetter $r.drive_letter
   $isReadyFile = HasAction -Row $r -Action "READY_FILE_BACKUP"
   $isSystemSkip = HasAction -Row $r -Action "SKIP_SYSTEM_DISK_BY_DEFAULT"
@@ -163,7 +166,9 @@ foreach($r in @($readiness.rows)){
 $receipt = [ordered]@{
   schema = "ld.device.file_backup_plan.receipt.v1"
   event_type = "ld.device.file_backup_plan.receipt.v1"
-  ok = $true
+  ok = [bool]$inputAvailable
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
+  input_errors = @($readiness.input_errors)
   repo_root = $RepoRoot
   mode = "file_backup_plan_dry_run"
   destructive = $false
@@ -188,4 +193,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_FILE_BACKUP_PLAN_PATH: " + $outPath)
 Write-Output ("DEVICE_FILE_BACKUP_PLAN_COUNT: " + [string]$planRows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_FILE_BACKUP_PLAN_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_FILE_BACKUP_PLAN_OK" }
+else { Write-Output "LD_DEVICE_FILE_BACKUP_PLAN_UNAVAILABLE" }

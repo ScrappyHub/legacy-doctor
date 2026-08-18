@@ -98,9 +98,20 @@ $health = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld
 $read = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_read_probe_v1.ps1") -Schema "ld.device.read_probe.receipt.v1"
 
 $admin = Is-Admin
+$inputsAvailable = ((SafeBool $inventory.ok) -and (SafeBool $mount.ok) -and (SafeBool $health.ok) -and (SafeBool $read.ok))
+$inputErrors = @()
+foreach($input in @($inventory,$mount,$health,$read)){
+  if(-not (SafeBool $input.ok)){
+    $code = SafeStr $input.error_code
+    if([string]::IsNullOrWhiteSpace($code)){ $code = "INPUT_UNAVAILABLE" }
+    $inputErrors = Add-Unique $inputErrors $code
+  }
+}
 $rows = @()
 
-foreach($m in @($mount.rows)){
+$mountRows = @()
+if($inputsAvailable){ $mountRows = @($mount.rows) }
+foreach($m in @($mountRows)){
   $dn = [int]$m.disk_number
   $drive = NormalizeDriveLetter $m.drive_letter
   $mountState = SafeStr $m.mount_state
@@ -189,7 +200,9 @@ foreach($r in @($rows)){
 $receipt = [ordered]@{
   schema = "ld.device.backup_readiness.receipt.v1"
   event_type = "ld.device.backup_readiness.receipt.v1"
-  ok = $true
+  ok = [bool]$inputsAvailable
+  availability = $(if($inputsAvailable){ "available" } else { "unavailable" })
+  input_errors = @($inputErrors)
   repo_root = $RepoRoot
   mode = "operator_backup_readiness"
   destructive = $false
@@ -216,4 +229,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_BACKUP_READINESS_PATH: " + $outPath)
 Write-Output ("DEVICE_BACKUP_READINESS_ROWS: " + [string]$rows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_BACKUP_READINESS_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_BACKUP_READINESS_OK" }
+else { Write-Output "LD_DEVICE_BACKUP_READINESS_UNAVAILABLE" }

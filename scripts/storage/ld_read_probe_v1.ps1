@@ -163,10 +163,16 @@ function Read-Sample([string]$Path,[int]$MaxBytes){
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
 $volumes = @()
+$availability = "available"
+$errorCode = ""
+$errorMessage = ""
 try {
   $volumes = @(Get-Volume -ErrorAction Stop | Sort-Object DriveLetter)
 } catch {
   $volumes = @()
+  $availability = "unavailable"
+  $errorCode = "VOLUME_DISCOVERY_UNAVAILABLE"
+  $errorMessage = $_.Exception.Message
 }
 
 $rows = @()
@@ -239,7 +245,10 @@ foreach($r in @($rows)){
 $receipt = [ordered]@{
   schema = "ld.device.read_probe.receipt.v1"
   event_type = "ld.device.read_probe.receipt.v1"
-  ok = $true
+  ok = ($availability -eq "available")
+  availability = $availability
+  error_code = $errorCode
+  error = $errorMessage
   repo_root = $RepoRoot
   mode = "mounted_volume_read_sample"
   destructive = $false
@@ -262,4 +271,5 @@ Write-Output ("DEVICE_READ_PROBE_PATH: " + $outPath)
 Write-Output ("DEVICE_READ_PROBE_VOLUME_COUNT: " + [string]$rows.Count)
 Write-Output ("DEVICE_READ_PROBE_OK_COUNT: " + [string]$okCount)
 Write-Output $json
-Write-Output "LD_DEVICE_READ_PROBE_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_READ_PROBE_OK" }
+else { Write-Output "LD_DEVICE_READ_PROBE_UNAVAILABLE" }

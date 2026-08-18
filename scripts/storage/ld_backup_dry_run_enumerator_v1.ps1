@@ -232,9 +232,12 @@ if($LASTEXITCODE -ne 0){
 }
 
 $plan = First-JsonObjectFromOutput -Output $out -Schema "ld.device.file_backup_plan.receipt.v1"
+$inputAvailable = SafeBool $plan.ok
 
 $rows = @()
-foreach($p in @($plan.plan_rows)){
+$planRows = @()
+if($inputAvailable){ $planRows = @($plan.plan_rows) }
+foreach($p in @($planRows)){
   $rows += ,(Enumerate-Source -PlanRow $p -MaxFiles $MaxFilesPerSource -MaxDirs $MaxDirsPerSource -MaxSamples $MaxSamplesPerSource)
 }
 
@@ -255,7 +258,8 @@ foreach($r in @($rows)){
 $receipt = [ordered]@{
   schema = "ld.device.backup_dry_run_enumerator.receipt.v1"
   event_type = "ld.device.backup_dry_run_enumerator.receipt.v1"
-  ok = $true
+  ok = [bool]$inputAvailable
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
   repo_root = $RepoRoot
   mode = "backup_dry_run_enumerator"
   destructive = $false
@@ -284,4 +288,5 @@ Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_PATH: " + $outPath)
 Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_SOURCES: " + [string]$rows.Count)
 Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_FILES: " + [string]$totalFiles)
 Write-Output $json
-Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_OK" }
+else { Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_UNAVAILABLE" }

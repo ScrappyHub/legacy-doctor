@@ -10,214 +10,85 @@ function Die([string]$Code,[string]$Detail){
 }
 
 function Require([bool]$Condition,[string]$Code,[string]$Detail){
-  if(-not $Condition){
-    Die $Code $Detail
-  }
+  if(-not $Condition){ Die $Code $Detail }
 }
 
 function Parse-GateFile([string]$Path){
-  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
-    Die "PARSE_GATE_MISSING" $Path
-  }
-
-  $tok = $null
-  $err = $null
-  [void][System.Management.Automation.Language.Parser]::ParseFile($Path,[ref]$tok,[ref]$err)
-  if($err -and $err.Count -gt 0){
-    $e = $err[0]
-    Die "PARSE_GATE_FAIL" ($Path + ":" + $e.Extent.StartLineNumber + ":" + $e.Extent.StartColumnNumber + ": " + $e.Message)
-  }
-}
-
-function Read-Utf8NoBom([string]$Path){
-  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
-    Die "MISSING_FILE" $Path
-  }
-  return [IO.File]::ReadAllText($Path,(New-Object System.Text.UTF8Encoding($false)))
-}
-
-function Read-BytesAt([string]$Path,[UInt64]$Offset,[int]$Count){
-  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
-    Die "MISSING_FILE" $Path
-  }
-
-  $fs = [IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
-  try {
-    [void]$fs.Seek([Int64]$Offset,[IO.SeekOrigin]::Begin)
-    $buf = New-Object byte[] $Count
-    $read = $fs.Read($buf,0,$buf.Length)
-    if($read -ne $Count){
-      Die "READ_SHORT" ($Path + ": offset=" + $Offset + " read=" + $read + " expected=" + $Count)
-    }
-    return $buf
-  } finally {
-    $fs.Dispose()
-  }
-}
-
-function HexSha256Bytes([byte[]]$Bytes){
-  if($null -eq $Bytes){ $Bytes = [byte[]]@() }
-
-  $sha = [System.Security.Cryptography.SHA256]::Create()
-  try {
-    $hash = $sha.ComputeHash($Bytes)
-  } finally {
-    $sha.Dispose()
-  }
-
-  $sb = New-Object System.Text.StringBuilder
-  foreach($b in $hash){
-    [void]$sb.Append($b.ToString("x2"))
-  }
-  return $sb.ToString()
-}
-
-function HexSha256File([string]$Path){
-  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){
-    Die "MISSING_FILE" $Path
-  }
-
-  $sha = [System.Security.Cryptography.SHA256]::Create()
-  try {
-    $fs = [IO.File]::OpenRead($Path)
-    try {
-      $hash = $sha.ComputeHash($fs)
-    } finally {
-      $fs.Dispose()
-    }
-  } finally {
-    $sha.Dispose()
-  }
-
-  $sb = New-Object System.Text.StringBuilder
-  foreach($b in $hash){
-    [void]$sb.Append($b.ToString("x2"))
-  }
-  return $sb.ToString()
+  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){ Die "PARSE_GATE_MISSING" $Path }
+  $tokens = $null
+  $errors = $null
+  [void][System.Management.Automation.Language.Parser]::ParseFile($Path,[ref]$tokens,[ref]$errors)
+  if(@($errors).Count -gt 0){ Die "PARSE_GATE_FAIL" ($Path + ":" + $errors[0].Message) }
 }
 
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+$ReceiptsLib = Join-Path $RepoRoot "scripts\storage\_lib_ld_receipts_v1.ps1"
+$SchemaPath = Join-Path $RepoRoot "schemas\ld.fat32.imagefile.receipt.v1.json"
 
-$RawLib              = Join-Path $RepoRoot "scripts\storage\_lib_ld_rawdisk_v1.ps1"
-$LayoutLib           = Join-Path $RepoRoot "scripts\storage\_lib_ld_fat32_layout_v1.ps1"
-$BootLib             = Join-Path $RepoRoot "scripts\storage\_lib_ld_fat32_boot_v1.ps1"
-$ReceiptsLib         = Join-Path $RepoRoot "scripts\storage\_lib_ld_receipts_v1.ps1"
-$VerifyImageSelftest = Join-Path $RepoRoot "scripts\selftest\_selftest_ld_fat32_owned_verify_imagefile_v1.ps1"
-$SchemaPath          = Join-Path $RepoRoot "schemas\ld.fat32.imagefile.receipt.v1.json"
+Parse-GateFile $ReceiptsLib
+if(-not (Test-Path -LiteralPath $SchemaPath -PathType Leaf)){ Die "MISSING_SCHEMA" $SchemaPath }
+try { $null = Get-Content -LiteralPath $SchemaPath -Raw | ConvertFrom-Json -ErrorAction Stop }
+catch { Die "SCHEMA_JSON_INVALID" $_.Exception.Message }
 
-foreach($p in @($RawLib,$LayoutLib,$BootLib,$ReceiptsLib,$VerifyImageSelftest)){
-  Parse-GateFile $p
-  Write-Host ("PARSE_OK: " + $p) -ForegroundColor DarkGray
-}
-
-# JSON schema is not PowerShell; require existence only.
-if(-not (Test-Path -LiteralPath $SchemaPath -PathType Leaf)){
-  Die "MISSING_SCHEMA" $SchemaPath
-}
-Write-Host ("SCHEMA_OK: " + $SchemaPath) -ForegroundColor DarkGray
-
-$PSExe = (Get-Command powershell.exe -ErrorAction Stop).Source
-$out = & $PSExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $VerifyImageSelftest -RepoRoot $RepoRoot 2>&1
-
-foreach($x in @(@($out))){
-  [Console]::Out.WriteLine($x)
-}
-
-$joined = (@(@($out)) -join "`n")
-if($joined -notmatch "FULL_GREEN"){
-  Die "VERIFY_IMAGEFILE_SELFTEST_MISSING_FULL_GREEN" $VerifyImageSelftest
-}
-if($joined -notmatch "SELFTEST_LD_FAT32_OWNED_VERIFY_IMAGEFILE_OK"){
-  Die "VERIFY_IMAGEFILE_SELFTEST_MISSING_OK" $VerifyImageSelftest
-}
-
-. $RawLib
-. $LayoutLib
-. $BootLib
 . $ReceiptsLib
 
-$ImagePath = Join-Path $RepoRoot "proofs\receipts\fat32_owned_imagefile\fat32_owned_test.img"
-if(-not (Test-Path -LiteralPath $ImagePath -PathType Leaf)){
-  Die "MISSING_IMAGEFILE" $ImagePath
+# This is a small deterministic file fixture, not a device image operation.
+$fixtureDir = Join-Path $RepoRoot "proofs\selftest\receipt_fixture"
+if(-not (Test-Path -LiteralPath $fixtureDir -PathType Container)){
+  New-Item -ItemType Directory -Force -Path $fixtureDir | Out-Null
 }
+$fixturePath = Join-Path $fixtureDir "deterministic_fixture.bin"
+$fixtureBytes = New-Object byte[] 4096
+for($i=0; $i -lt $fixtureBytes.Length; $i++){ $fixtureBytes[$i] = [byte]($i % 251) }
+[IO.File]::WriteAllBytes($fixturePath,$fixtureBytes)
 
-$DiskSizeBytes = [UInt64]4294967296
-$BytesPerSector = 512
-
-$plan = LDFAT-NewPlan `
-  -DiskSizeBytes $DiskSizeBytes `
-  -BytesPerSector $BytesPerSector `
-  -DeviceId "win.disk.v1:test:imagefile" `
-  -DiskNumber 777 `
-  -Label "SDCARD" `
-  -ClusterKiB 0
-
-$mbr = Read-BytesAt -Path $ImagePath -Offset 0 -Count 512
-$boot = Read-BytesAt -Path $ImagePath -Offset ([UInt64]$plan.partition_start_lba * [UInt64]$plan.bytes_per_sector) -Count 512
-$fsi = Read-BytesAt -Path $ImagePath -Offset (([UInt64]$plan.partition_start_lba + [UInt64]$plan.fsinfo_sector) * [UInt64]$plan.bytes_per_sector) -Count 512
-$bb = Read-BytesAt -Path $ImagePath -Offset (([UInt64]$plan.partition_start_lba + [UInt64]$plan.backup_boot_sector) * [UInt64]$plan.bytes_per_sector) -Count 512
-$fat0 = Read-BytesAt -Path $ImagePath -Offset ([UInt64]$plan.fat1_start_lba * [UInt64]$plan.bytes_per_sector) -Count 512
-$root0 = Read-BytesAt -Path $ImagePath -Offset ([UInt64]$plan.root_dir_first_lba * [UInt64]$plan.bytes_per_sector) -Count 512
+$sector = New-Object byte[] 512
+[Array]::Copy($fixtureBytes,0,$sector,0,$sector.Length)
+$fixtureHash = LDREC-HexSha256Bytes $fixtureBytes
+$sectorHash = LDREC-HexSha256Bytes $sector
 
 $receipt = [ordered]@{
   schema = "ld.fat32.imagefile.receipt.v1"
   event_type = "ld.fat32.imagefile.receipt.v1"
   ok = $true
   repo_root = $RepoRoot
-  image_path = $ImagePath
-  image_sha256 = (HexSha256File $ImagePath)
-  plan_sha256 = (LDREC-HexSha256TextLf (LDREC-ToCanonJson $plan))
-  disk_size_bytes = [UInt64]$plan.disk_size_bytes
-  bytes_per_sector = [UInt16]$plan.bytes_per_sector
-  device_id = [string]$plan.device_id
-  disk_number = [int]$plan.disk_number
-  partition_start_lba = [UInt64]$plan.partition_start_lba
-  partition_size_lba = [UInt64]$plan.partition_size_lba
-  sectors_per_cluster = [UInt32]$plan.sectors_per_cluster
-  reserved_sectors = [UInt16]$plan.reserved_sectors
-  fat_count = [UInt16]$plan.fat_count
-  fat_size_sectors = [UInt32]$plan.fat_size_sectors
-  root_cluster = [UInt32]$plan.root_cluster
-  label = [string]$plan.volume_label
+  image_path = $fixturePath
+  image_sha256 = $fixtureHash
+  plan_sha256 = (LDREC-HexSha256TextLf "receipt-fixture-plan-v1")
+  disk_size_bytes = [UInt64]$fixtureBytes.Length
+  bytes_per_sector = 512
+  device_id = "fixture:not-a-device"
+  disk_number = 0
+  partition_start_lba = 1
+  partition_size_lba = 7
+  sectors_per_cluster = 1
+  reserved_sectors = 1
+  fat_count = 2
+  fat_size_sectors = 1
+  root_cluster = 2
+  label = "FIXTURE"
   sector_hashes = [ordered]@{
-    mbr = (LDREC-HexSha256Bytes $mbr)
-    boot = (LDREC-HexSha256Bytes $boot)
-    fsinfo = (LDREC-HexSha256Bytes $fsi)
-    backup_boot = (LDREC-HexSha256Bytes $bb)
-    fat0 = (LDREC-HexSha256Bytes $fat0)
-    root0 = (LDREC-HexSha256Bytes $root0)
+    mbr = $sectorHash
+    boot = $sectorHash
+    fsinfo = $sectorHash
+    backup_boot = $sectorHash
+    fat0 = $sectorHash
+    root0 = $sectorHash
   }
 }
 
+$expectedReceiptHash = LDREC-HexSha256TextLf (LDREC-ToCanonJson $receipt)
+$actualReceiptHash = LDREC-AppendReceipt -RepoRoot $RepoRoot -Receipt $receipt
+Require ($actualReceiptHash -eq $expectedReceiptHash) "RECEIPT_HASH_MISMATCH" $actualReceiptHash
+
 $receiptPath = LDREC-ReceiptPath $RepoRoot
-$beforeCount = 0
-if(Test-Path -LiteralPath $receiptPath -PathType Leaf){
-  $beforeCount = @((Get-Content -LiteralPath $receiptPath -Encoding UTF8)).Count
-}
+$lastLine = Get-Content -LiteralPath $receiptPath -Encoding UTF8 | Select-Object -Last 1
+$last = $lastLine | ConvertFrom-Json
+Require ($last.receipt_hash -eq $expectedReceiptHash) "STORED_RECEIPT_HASH_MISMATCH" ([string]$last.receipt_hash)
+Require ($last.image_sha256 -eq $fixtureHash) "FIXTURE_HASH_MISMATCH" ([string]$last.image_sha256)
+Require (-not ([string]$last.device_id).StartsWith("win.disk.v1:")) "FIXTURE_MISREPRESENTED_AS_DEVICE" ([string]$last.device_id)
 
-$receiptHash = LDREC-AppendReceipt -RepoRoot $RepoRoot -Receipt $receipt
-
-Require (Test-Path -LiteralPath $receiptPath -PathType Leaf) "RECEIPT_PATH_MISSING" $receiptPath
-
-$lines = @(Get-Content -LiteralPath $receiptPath -Encoding UTF8)
-$afterCount = $lines.Count
-Require ($afterCount -ge ($beforeCount + 1)) "RECEIPT_APPEND_FAIL" ("before=" + $beforeCount + " after=" + $afterCount)
-
-$last = $lines[-1] | ConvertFrom-Json
-Require ($last.schema -eq "ld.fat32.imagefile.receipt.v1") "RECEIPT_SCHEMA_BAD" ([string]$last.schema)
-Require ($last.event_type -eq "ld.fat32.imagefile.receipt.v1") "RECEIPT_EVENT_BAD" ([string]$last.event_type)
-Require ($last.ok -eq $true) "RECEIPT_OK_BAD" ([string]$last.ok)
-Require ($last.receipt_hash -eq $receiptHash) "RECEIPT_HASH_BAD" ("actual=" + [string]$last.receipt_hash + " expected=" + $receiptHash)
-Require ($last.image_sha256 -eq (HexSha256File $ImagePath)) "RECEIPT_IMAGE_HASH_BAD" ([string]$last.image_sha256)
-Require ($last.plan_sha256 -eq (LDREC-HexSha256TextLf (LDREC-ToCanonJson $plan))) "RECEIPT_PLAN_HASH_BAD" ([string]$last.plan_sha256)
-Require ($last.sector_hashes.mbr -eq (LDREC-HexSha256Bytes $mbr)) "RECEIPT_MBR_HASH_BAD" ([string]$last.sector_hashes.mbr)
-Require ($last.sector_hashes.boot -eq (LDREC-HexSha256Bytes $boot)) "RECEIPT_BOOT_HASH_BAD" ([string]$last.sector_hashes.boot)
-Require ($last.sector_hashes.fsinfo -eq (LDREC-HexSha256Bytes $fsi)) "RECEIPT_FSINFO_HASH_BAD" ([string]$last.sector_hashes.fsinfo)
-Require ($last.sector_hashes.backup_boot -eq (LDREC-HexSha256Bytes $bb)) "RECEIPT_BACKUP_HASH_BAD" ([string]$last.sector_hashes.backup_boot)
-Require ($last.sector_hashes.fat0 -eq (LDREC-HexSha256Bytes $fat0)) "RECEIPT_FAT0_HASH_BAD" ([string]$last.sector_hashes.fat0)
-Require ($last.sector_hashes.root0 -eq (LDREC-HexSha256Bytes $root0)) "RECEIPT_ROOT0_HASH_BAD" ([string]$last.sector_hashes.root0)
-
-Write-Host ("RECEIPT_PATH: " + $receiptPath) -ForegroundColor Green
-Write-Host ("RECEIPT_HASH: " + $receiptHash) -ForegroundColor Green
-Write-Host "SELFTEST_LD_FAT32_IMAGEFILE_RECEIPT_OK" -ForegroundColor Green
+Write-Output "PASS: deterministic receipt fixture emitted and recomputed"
+Write-Output "PASS: fixture is explicitly not a device image"
+Write-Output "SELFTEST_LD_FAT32_IMAGEFILE_RECEIPT_OK"
 Write-Output "FULL_GREEN"

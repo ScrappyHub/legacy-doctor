@@ -17,7 +17,7 @@ if($LASTEXITCODE -ne 0){ Die "BACKUP_READINESS_EXIT_NONZERO" ([string]$LASTEXITC
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_BACKUP_READINESS_OK"){
+if($text -notmatch "LD_DEVICE_BACKUP_READINESS_(OK|UNAVAILABLE)"){
   Die "BACKUP_READINESS_TOKEN_MISSING" ""
 }
 
@@ -29,16 +29,20 @@ if($text -notmatch '"write_test":false'){
   Die "WRITE_TEST_FALSE_MISSING" ""
 }
 
-if($text -notmatch 'READY_FILE_BACKUP'){
+if($text -match "LD_DEVICE_BACKUP_READINESS_OK" -and $text -notmatch 'READY_FILE_BACKUP'){
   Die "READY_FILE_BACKUP_MISSING" ""
 }
 
-if($text -notmatch 'READY_RAW_IMAGE_'){
+if($text -match "LD_DEVICE_BACKUP_READINESS_OK" -and $text -notmatch 'READY_RAW_IMAGE_'){
   Die "RAW_IMAGE_RECOMMENDATION_MISSING" ""
+}
+if($text -match "LD_DEVICE_BACKUP_READINESS_UNAVAILABLE" -and ($text -notmatch '"ok":false' -or $text -notmatch '"input_errors":\[')){
+  Die "READINESS_FALSE_UNAVAILABLE" ""
 }
 
 Write-Output $text
 Write-Output "PASS: backup readiness emitted"
 Write-Output "PASS: non-destructive flags present"
 Write-Output "PASS: operator recommendations present"
+Write-Output "PASS: unavailable inputs block readiness"
 Write-Output "SELFTEST_LD_STORAGE03_BACKUP_READINESS_OK"

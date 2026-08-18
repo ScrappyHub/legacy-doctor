@@ -125,6 +125,16 @@ $manifestVerify = Run-ReceiptScript `
 $actions = @()
 $reasons = @()
 
+if(-not (SafeBool $selector.ok)){
+  $actions = Add-Unique $actions "BLOCKED_SOURCE_DISCOVERY_UNAVAILABLE"
+  $reasons = Add-Unique $reasons "source discovery or planning is unavailable"
+}
+
+if((SafeInt $manifestVerify.valid_row_count) -le 0){
+  $actions = Add-Unique $actions "BLOCKED_EMPTY_MANIFEST"
+  $reasons = Add-Unique $reasons "copy manifest contains no verified rows"
+}
+
 foreach($r in @($selector.rows)){
   if(RowHasAction -Row $r -Action "INSUFFICIENT_SPACE"){
     $actions = Add-Unique $actions "BLOCKED_INSUFFICIENT_SPACE"

@@ -147,6 +147,7 @@ if($LASTEXITCODE -ne 0){
 }
 
 $plan = First-JsonObjectFromOutput -Output $out -Schema "ld.device.file_backup_plan.receipt.v1"
+$inputAvailable = SafeBool $plan.ok
 
 $rows = @()
 
@@ -220,11 +221,14 @@ foreach($r in @($rows)){
     $selectorCounts[$a] = [int]$selectorCounts[$a] + 1
   }
 }
+if(-not $inputAvailable){ $selectorCounts["SOURCE_DISCOVERY_UNAVAILABLE"] = 1 }
+if($inputAvailable -and [int]$plan.planned_count -eq 0){ $selectorCounts["NO_PLANNED_SOURCES"] = 1 }
 
 $receipt = [ordered]@{
   schema = "ld.device.destination_selector.receipt.v1"
   event_type = "ld.device.destination_selector.receipt.v1"
-  ok = $true
+  ok = [bool]($inputAvailable -and [int]$plan.planned_count -gt 0)
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
   repo_root = $RepoRoot
   mode = "destination_selector_dry_run"
   destructive = $false
@@ -252,4 +256,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_DESTINATION_SELECTOR_PATH: " + $outPath)
 Write-Output ("DEVICE_DESTINATION_SELECTOR_ROWS: " + [string]$rows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_DESTINATION_SELECTOR_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_DESTINATION_SELECTOR_OK" }
+else { Write-Output "LD_DEVICE_DESTINATION_SELECTOR_BLOCKED" }
