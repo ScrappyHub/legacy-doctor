@@ -86,6 +86,16 @@ $integrationText = Get-Content -LiteralPath (Join-Path $RepoRoot "docs\canonical
 if(-not $integrationText.Contains("| Service ID | ``legacy-doctor`` |")){ Die "CANONICAL_INTEGRATION_SERVICE_ID_MISSING" "legacy-doctor" }
 if(-not $integrationText.Contains("| Ecosystem layer | ``unclassified`` |")){ Die "CANONICAL_INTEGRATION_LAYER_MISMATCH" "unclassified" }
 
+$rejectedLegacyPaths = @(
+  (Join-Path $RepoRoot "lib\doctor-common.ps1"),
+  (Join-Path $RepoRoot "scripts\_ld_rescore_and_stage_docs_v1.ps1")
+)
+foreach($rejectedLegacyPath in $rejectedLegacyPaths){
+  if(Test-Path -LiteralPath $rejectedLegacyPath){
+    Die "REJECTED_LEGACY_FILE_IN_ACTIVE_TREE" $rejectedLegacyPath
+  }
+}
+
 $schemaFiles = @(Get-ChildItem (Join-Path $RepoRoot "schemas") -File -Filter *.json | Sort-Object Name)
 foreach($schemaFile in $schemaFiles){
   try {

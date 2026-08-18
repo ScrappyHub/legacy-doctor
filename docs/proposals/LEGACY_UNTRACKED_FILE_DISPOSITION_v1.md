@@ -1,6 +1,6 @@
 # Proposal: Legacy untracked file disposition v1
 
-Status: proposed; files preserved pending operator disposition
+Status: implemented locally through recoverable quarantine; deletion not performed
 
 ## Purpose
 
@@ -35,3 +35,14 @@ Promotion would require restoring and verifying its dependency, narrowing its st
 ## Compatibility impact
 
 Neither file is required by the supported Storage-03 chain, the unified verifier, or clean-archive verification. Keeping them outside the committed product surface has no supported runtime compatibility impact.
+
+## Quarantine record
+
+On 2026-08-18, the files were moved from the active source tree into the ignored local evidence area. Their bytes were preserved exactly and verified after the move.
+
+| Original path | Local quarantine path | SHA-256 |
+|---|---|---|
+| `lib/doctor-common.ps1` | `proofs/quarantine/legacy_untracked_v1/lib/doctor-common.ps1` | `a8c5f85d71a236739dbba2d74dfdcf8542e0925547ec777c33abf80ab86971e9` |
+| `scripts/_ld_rescore_and_stage_docs_v1.ps1` | `proofs/quarantine/legacy_untracked_v1/scripts/_ld_rescore_and_stage_docs_v1.ps1` | `05f1656c932be1755240334d84161dc97eb133fa323cb1cb5009bcf64312958c` |
+
+The quarantine is intentionally absent from clean clones because `proofs/` contains local evidence rather than source. Recovery consists of copying the exact quarantined file back to its original path and confirming the recorded hash. Permanent deletion or promotion remains a separate operator decision.
