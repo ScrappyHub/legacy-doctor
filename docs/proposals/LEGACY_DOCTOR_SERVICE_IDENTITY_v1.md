@@ -39,7 +39,7 @@ Legacy Doctor does not own:
 
 ## Safety boundary
 
-Supported lanes do not modify source media. A destination write probe may create, verify, and delete one bounded temporary file at an explicit destination. Real copying is not implemented.
+Supported lanes do not modify source media. The mounted-media backup lane may copy a bounded catalog into an explicit, non-overlapping destination after a write probe. It refuses existing destination files, verifies temporary and finalized SHA-256 values, and rolls back files created by a failed run. Device-protocol backup, raw imaging, and unbounded copying are not implemented.
 
 Historical FAT32 formatter code is quarantined and is not a supported capability.
 

@@ -1,6 +1,6 @@
 # Proposal: Legacy media compatibility and proof matrix v1
 
-Status: proposed; mounted-media fixture lane implemented
+Status: proposed; mounted-media catalog and bounded backup lanes implemented
 
 ## Product goal
 
@@ -21,7 +21,7 @@ Legacy Doctor should preserve accessible user-owned content from legacy storage 
 | Optical images | User-accessible `.iso`, `.img`, `.nrg`, `.mdf` files | Synthetic file fixture | Files are preserved as opaque optical-image candidates | No filesystem mounting or image-content validation |
 | ROM collections | User-accessible ROM-like files | Synthetic extension fixture | Files can be preserved and labeled as ROM candidates using bounded extension/path hints | No emulator, provenance, ownership, or playability claim |
 | `.cos` artifacts | User-accessible `.cos` files | Synthetic extension fixture | Files can be preserved as opaque COS artifacts | No assumption about which COS format produced the file and no execution/parsing claim |
-| Production copy executor | Explicit source and destination | Not implemented | None | Fixture copying must not be represented as production backup execution |
+| Bounded mounted-file backup | Explicit readable source and existing destination directories | Deterministic execution fixture with destination SHA-256 verification | A bounded set of ordinary files can be copied without overwriting, with source/destination separation, temporary-file verification, and fail-closed receipts | Physical-device compatibility still requires named-hardware evidence; this is not raw imaging or a device-protocol adapter |
 
 ## Apple-device boundary
 

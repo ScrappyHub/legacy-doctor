@@ -6,7 +6,7 @@ The supported Storage-03 scope inventories visible storage, classifies backup ca
 
 ## Current safety boundary
 
-Legacy Doctor currently does not copy user files, create backup sets, format disks, image disks, repair filesystems, mount or unmount volumes, or modify source media.
+Legacy Doctor can perform an explicitly requested, bounded, hash-verified copy between non-overlapping mounted directories. It does not format disks, image disks, repair filesystems, mount or unmount volumes, use native mobile-device protocols, or modify source media.
 
 The destination write probe is the one supported write operation. It creates a bounded temporary file at an explicitly selected destination, reads and hashes it, and deletes it.
 
@@ -22,13 +22,13 @@ Historical FAT32 formatting code remains in the repository for review history bu
 - Bounded dry-run enumeration and manifest construction
 - Manifest verification, execution preflight, run contract, and executor guard
 
-No real copy executor is implemented.
+A bounded mounted-file backup executor is available for explicit source and destination directories. It defaults to dry-run, requires `-Execute` to write, refuses path overlap and existing destination files, blocks truncated catalogs, copies through temporary files, verifies SHA-256 before and after finalization, and never writes source files.
 
 ## Legacy-media compatibility
 
 The mounted-media catalog can hash and classify readable files using bounded path and extension hints, including synthetic `iPod_Control`, `VIDEO_TS`, ROM-candidate, optical-image, audio, and opaque `.cos` fixtures. Its self-test also reproduces those fixture files into an isolated proof destination and verifies every destination SHA-256.
 
-This proves the mounted-file algorithm, not physical-device compatibility. Modern iPhone/iPad/iPod touch access, Apple backup integration, optical-drive validation, protected DVD handling, playlist reconstruction, and production copy execution remain separate unimplemented lanes. See `docs/proposals/LEGACY_MEDIA_COMPATIBILITY_MATRIX_v1.md`.
+This proves the mounted-file catalog and bounded copy engine, not physical-device compatibility. Modern iPhone/iPad/iPod touch access, Apple backup integration, optical-drive validation, protected DVD handling, playlist reconstruction, and raw-device recovery remain separate unimplemented lanes. See `docs/proposals/LEGACY_MEDIA_COMPATIBILITY_MATRIX_v1.md`.
 
 ## Verification
 
