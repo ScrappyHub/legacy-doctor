@@ -196,6 +196,13 @@ $summaryJson = $summary | ConvertTo-Json -Depth 20
 Write-Output ("VERIFICATION_SUMMARY: " + $summaryPath)
 Write-Output ("VERIFICATION_TESTS: " + $summary.passed_count + "/" + $summary.test_count)
 
+foreach($failure in @($failed)){
+  Write-Output ("VERIFICATION_FAILURE: " + $failure.test + " exit=" + [string]$failure.exit_code + " timeout=" + [string]$failure.timed_out)
+  if(-not [string]::IsNullOrWhiteSpace([string]$failure.error)){
+    Write-Output ([string]$failure.error)
+  }
+}
+
 if($TestPattern -eq "*.ps1" -and -not $summary.formatter_quarantine_tested){ Die "FORMATTER_QUARANTINE_NOT_PROVEN" $summaryPath }
 if(-not $summary.ok){ Die "PROJECT_VERIFICATION_FAILED" $summaryPath }
 
