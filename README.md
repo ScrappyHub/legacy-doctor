@@ -32,6 +32,8 @@ Run the repository verification entry point from Windows PowerShell:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test\verify_project_v1.ps1 -RepoRoot .
 ```
 
+The same command runs from a clean Windows checkout in `.github/workflows/verify.yml`. Receipt-producing stages are consumed through the shared fail-closed validator in `scripts/storage/_lib_ld_receipts_v1.ps1`; duplicate, malformed, schema-mismatched, or undeclared top-level claims are rejected.
+
 Storage discovery may be unavailable without sufficient Windows permissions. Unavailable state must be reported explicitly and must block execution; it must not be treated as an empty successful inventory.
 
 ## Evidence

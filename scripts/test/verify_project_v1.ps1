@@ -41,6 +41,18 @@ foreach($file in @($parseFiles | Sort-Object FullName -Unique)){
 }
 if(@($parseErrors).Count -gt 0){ Die "POWERSHELL_PARSE_FAILED" ($parseErrors -join " | ") }
 
+$legacyReceiptParsers = @(
+  Get-ChildItem (Join-Path $RepoRoot "scripts\storage") -File -Filter *.ps1 |
+    Where-Object { $_.Name -ne "_lib_ld_receipts_v1.ps1" } |
+    Select-String -Pattern "First-JsonObjectFromOutput|JSON_SCHEMA_OUTPUT_MISSING"
+)
+if($legacyReceiptParsers.Count -gt 0){
+  Die "LEGACY_RECEIPT_PARSER_PRESENT" (($legacyReceiptParsers | ForEach-Object { $_.Path + ":" + $_.LineNumber }) -join " | ")
+}
+
+$workflowPath = Join-Path $RepoRoot ".github\workflows\verify.yml"
+if(-not (Test-Path -LiteralPath $workflowPath -PathType Leaf)){ Die "CI_WORKFLOW_MISSING" $workflowPath }
+
 $schemaFiles = @(Get-ChildItem (Join-Path $RepoRoot "schemas") -File -Filter *.json | Sort-Object Name)
 foreach($schemaFile in $schemaFiles){
   try {

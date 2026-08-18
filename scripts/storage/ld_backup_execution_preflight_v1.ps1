@@ -13,6 +13,10 @@ function Die([string]$Code,[string]$Detail){
   throw ($Code + ":" + $Detail)
 }
 
+$ReceiptsLib = Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1"
+if(-not (Test-Path -LiteralPath $ReceiptsLib -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $ReceiptsLib }
+. $ReceiptsLib
+
 function EnsureDir([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if(-not (Test-Path -LiteralPath $Path -PathType Container)){
@@ -28,40 +32,6 @@ function Write-Utf8NoBomLf([string]$Path,[string]$Text){
   if(-not $t.EndsWith("`n")){ $t += "`n" }
 
   [IO.File]::WriteAllText($Path,$t,[Text.UTF8Encoding]::new($false))
-}
-
-function First-JsonObjectFromOutput([object[]]$Output,[string]$Schema){
-  foreach($line in @($Output)){
-    $s = [string]$line
-    if($s.StartsWith("{") -and $s.Contains(('"schema":"' + $Schema + '"'))){
-      return ($s | ConvertFrom-Json)
-    }
-  }
-
-  Die "JSON_SCHEMA_OUTPUT_MISSING" $Schema
-}
-
-function Run-ReceiptScript([string]$ScriptPath,[string]$Schema,[string[]]$ExtraArgs){
-  if(-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)){
-    Die "SCRIPT_MISSING" $ScriptPath
-  }
-
-  $args = @(
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy","Bypass",
-    "-File",$ScriptPath,
-    "-RepoRoot",$RepoRoot
-  )
-
-  foreach($a in @($ExtraArgs)){ $args += $a }
-
-  $out = & powershell.exe @args
-  if($LASTEXITCODE -ne 0){
-    Die "SCRIPT_EXIT_NONZERO" ($ScriptPath + ":" + [string]$LASTEXITCODE)
-  }
-
-  return (First-JsonObjectFromOutput -Output $out -Schema $Schema)
 }
 
 function SafeStr([object]$Value){
@@ -102,19 +72,22 @@ $selectorScript = Join-Path $RepoRoot "scripts\storage\ld_destination_selector_v
 $writeProbeScript = Join-Path $RepoRoot "scripts\storage\ld_destination_write_probe_v1.ps1"
 $manifestVerifyScript = Join-Path $RepoRoot "scripts\storage\ld_copy_manifest_verify_v1.ps1"
 
-$selector = Run-ReceiptScript `
+$selector = LDREC-RunReceiptScript `
   -ScriptPath $selectorScript `
-  -Schema "ld.device.destination_selector.receipt.v1" `
+  -RepoRoot $RepoRoot `
+  -ExpectedSchema "ld.device.destination_selector.receipt.v1" `
   -ExtraArgs @("-DestinationPath",$DestinationPath)
 
-$writeProbe = Run-ReceiptScript `
+$writeProbe = LDREC-RunReceiptScript `
   -ScriptPath $writeProbeScript `
-  -Schema "ld.device.destination_write_probe.receipt.v1" `
+  -RepoRoot $RepoRoot `
+  -ExpectedSchema "ld.device.destination_write_probe.receipt.v1" `
   -ExtraArgs @("-DestinationPath",$DestinationPath)
 
-$manifestVerify = Run-ReceiptScript `
+$manifestVerify = LDREC-RunReceiptScript `
   -ScriptPath $manifestVerifyScript `
-  -Schema "ld.device.copy_manifest_verify.receipt.v1" `
+  -RepoRoot $RepoRoot `
+  -ExpectedSchema "ld.device.copy_manifest_verify.receipt.v1" `
   -ExtraArgs @(
     "-DestinationRoot",$DestinationPath,
     "-MaxFilesPerSource",[string]$MaxFilesPerSource,
