@@ -26,6 +26,7 @@ EnsureDir $runDir
 
 $parseFiles = @()
 $parseFiles += @(Get-ChildItem (Join-Path $RepoRoot "scripts\storage") -File -Filter *.ps1)
+$parseFiles += @(Get-ChildItem (Join-Path $RepoRoot "scripts\media") -File -Filter *.ps1)
 $parseFiles += @(Get-ChildItem (Join-Path $RepoRoot "scripts\selftest") -File -Filter *.ps1)
 $parseFiles += @(Get-ChildItem (Join-Path $RepoRoot "scripts") -File -Filter _RUN_*.ps1)
 $parseFiles += @(Get-ChildItem (Join-Path $RepoRoot "scripts\test") -File -Filter *.ps1)

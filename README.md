@@ -24,6 +24,12 @@ Historical FAT32 formatting code remains in the repository for review history bu
 
 No real copy executor is implemented.
 
+## Legacy-media compatibility
+
+The mounted-media catalog can hash and classify readable files using bounded path and extension hints, including synthetic `iPod_Control`, `VIDEO_TS`, ROM-candidate, optical-image, audio, and opaque `.cos` fixtures. Its self-test also reproduces those fixture files into an isolated proof destination and verifies every destination SHA-256.
+
+This proves the mounted-file algorithm, not physical-device compatibility. Modern iPhone/iPad/iPod touch access, Apple backup integration, optical-drive validation, protected DVD handling, playlist reconstruction, and production copy execution remain separate unimplemented lanes. See `docs/proposals/LEGACY_MEDIA_COMPATIBILITY_MATRIX_v1.md`.
+
 ## Verification
 
 Run the repository verification entry point from Windows PowerShell:
