@@ -19,9 +19,11 @@ test("server-renders the Legacy Doctor dashboard", async () => {
   assert.match(html, /This machine/);
   assert.match(html, /AMD Ryzen 7 5800X/);
   assert.match(html, /NVIDIA GeForce RTX 4060/);
-  assert.match(html, /Verified hardware snapshot/);
+  assert.match(html, /Full iPod image verified/);
   assert.match(html, /Apple iPod Shuffle/);
-  assert.match(html, /10 of 10 hashes matched/);
+  assert.match(html, /Every iPod disk byte hashed/);
+  assert.match(html, /1,015,021,568/);
+  assert.match(html, /IMAGE HASHES MATCH/);
   assert.match(html, /Verified local snapshot/);
 });
 
@@ -31,7 +33,9 @@ test("keeps device writes gated and the layout responsive", async () => {
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /remains disabled until a verified restore point and explicit approval exist/);
+  assert.match(page, /remains disabled until device-write safeguards and explicit approval exist/);
+  assert.match(page, /Read-only imaging is proven/);
+  assert.match(page, /hardware restore remains locked/);
   assert.match(page, /Skip verified duplicates/);
   assert.match(page, /SHA-256 proven/);
   assert.match(page, /Encryption not configured/);
