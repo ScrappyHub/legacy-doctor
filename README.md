@@ -45,3 +45,5 @@ Runtime receipts are written below `proofs/`. They are local evidence outputs an
 Storage-03 is implemented through the blocked copy executor guard (`03N`). Unavailable-state propagation, closed top-level receipt schemas, negative safety tests, and unified local verification are in place. Clean-clone CI and independently validated, hash-chained receipts remain release-qualification work.
 
 The proposed service identity and ownership boundary are documented under `docs/proposals` pending ecosystem approval.
+
+The checked-in governance baseline intentionally remains `unclassified` until that proposal is approved and the ecosystem service map, registry, canonical integration document, and project contract are updated together.

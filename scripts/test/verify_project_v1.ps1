@@ -53,6 +53,39 @@ if($legacyReceiptParsers.Count -gt 0){
 $workflowPath = Join-Path $RepoRoot ".github\workflows\verify.yml"
 if(-not (Test-Path -LiteralPath $workflowPath -PathType Leaf)){ Die "CI_WORKFLOW_MISSING" $workflowPath }
 
+$governancePaths = @(
+  (Join-Path $RepoRoot "AGENTS.md"),
+  (Join-Path $RepoRoot "CLAUDE.md"),
+  (Join-Path $RepoRoot "docs\canonical\ECOSYSTEM_INTEGRATION.md"),
+  (Join-Path $RepoRoot "project.contract.json")
+)
+foreach($governancePath in $governancePaths){
+  if(-not (Test-Path -LiteralPath $governancePath -PathType Leaf)){
+    Die "GOVERNANCE_FILE_MISSING" $governancePath
+  }
+
+  $governanceBytes = [IO.File]::ReadAllBytes($governancePath)
+  if($governanceBytes.Length -ge 3 -and $governanceBytes[0] -eq 239 -and $governanceBytes[1] -eq 187 -and $governanceBytes[2] -eq 191){
+    Die "GOVERNANCE_FILE_UTF8_BOM_FORBIDDEN" $governancePath
+  }
+  if(@($governanceBytes | Where-Object { $_ -eq 13 }).Count -gt 0){
+    Die "GOVERNANCE_FILE_CRLF_FORBIDDEN" $governancePath
+  }
+}
+
+try {
+  $projectContract = Get-Content -LiteralPath (Join-Path $RepoRoot "project.contract.json") -Raw | ConvertFrom-Json -ErrorAction Stop
+} catch {
+  Die "PROJECT_CONTRACT_JSON_INVALID" $_.Exception.Message
+}
+if(([string]$projectContract.project_id) -cne "legacy-doctor"){ Die "PROJECT_CONTRACT_ID_MISMATCH" ([string]$projectContract.project_id) }
+if(([string]$projectContract.ecosystem.service_id) -cne "legacy-doctor"){ Die "PROJECT_CONTRACT_SERVICE_ID_MISMATCH" ([string]$projectContract.ecosystem.service_id) }
+if(([string]$projectContract.ecosystem.layer) -cne "unclassified"){ Die "PROJECT_CONTRACT_UNAPPROVED_LAYER" ([string]$projectContract.ecosystem.layer) }
+
+$integrationText = Get-Content -LiteralPath (Join-Path $RepoRoot "docs\canonical\ECOSYSTEM_INTEGRATION.md") -Raw
+if(-not $integrationText.Contains("| Service ID | ``legacy-doctor`` |")){ Die "CANONICAL_INTEGRATION_SERVICE_ID_MISSING" "legacy-doctor" }
+if(-not $integrationText.Contains("| Ecosystem layer | ``unclassified`` |")){ Die "CANONICAL_INTEGRATION_LAYER_MISMATCH" "unclassified" }
+
 $schemaFiles = @(Get-ChildItem (Join-Path $RepoRoot "schemas") -File -Filter *.json | Sort-Object Name)
 foreach($schemaFile in $schemaFiles){
   try {
@@ -136,6 +169,7 @@ $summary = [ordered]@{
   formatter_quarantine_tested = (@($results | Where-Object { $_.test -eq "_selftest_ld_fat32_owned_writepath_v1.ps1" -and $_.passed }).Count -eq 1)
   powershell_file_count = [int]$parseFiles.Count
   schema_file_count = [int]$schemaFiles.Count
+  governance_file_count = [int]$governancePaths.Count
   test_count = [int]$results.Count
   passed_count = [int]($results.Count - $failed.Count)
   failed_count = [int]$failed.Count
