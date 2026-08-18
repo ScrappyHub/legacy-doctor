@@ -96,6 +96,21 @@ function LDREC-HexSha256Bytes([byte[]]$Bytes){
   return $sb.ToString()
 }
 
+function LDREC-HexSha256File([string]$Path){
+  if(-not (Test-Path -LiteralPath $Path -PathType Leaf)){ LDREC-Die "HASH_FILE_MISSING" $Path }
+  $stream = [IO.File]::Open($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $hash = $sha.ComputeHash($stream)
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
+  }
+  $builder = New-Object System.Text.StringBuilder
+  foreach($byte in $hash){ [void]$builder.Append($byte.ToString("x2")) }
+  return $builder.ToString()
+}
+
 function LDREC-HexSha256TextLf([string]$Text){
   if($null -eq $Text){ $Text = "" }
   $t = ($Text -replace "`r`n","`n") -replace "`r","`n"
@@ -126,6 +141,15 @@ function LDREC-AppendReceipt([string]$RepoRoot,[hashtable]$Receipt){
 function LDREC-HasProperty([object]$Value,[string]$Name){
   if($null -eq $Value){ return $false }
   return ($null -ne $Value.PSObject.Properties[$Name])
+}
+
+function LDREC-ConvertFromJson([string]$Json){
+  $parameters = @{ ErrorAction = "Stop" }
+  $command = Get-Command ConvertFrom-Json -ErrorAction Stop
+  if($command.Parameters.ContainsKey("DateKind")){
+    $parameters["DateKind"] = "String"
+  }
+  return ($Json | ConvertFrom-Json @parameters)
 }
 
 function LDREC-AssertJsonType([object]$Value,[string]$Type,[string]$Context){
@@ -242,7 +266,7 @@ function LDREC-ReadReceiptFromOutput(
   }
 
   try {
-    $schemaDocument = Get-Content -LiteralPath $schemaPath -Raw | ConvertFrom-Json -ErrorAction Stop
+    $schemaDocument = LDREC-ConvertFromJson (Get-Content -LiteralPath $schemaPath -Raw)
   } catch {
     LDREC-Die "RECEIPT_SCHEMA_JSON_INVALID" ($schemaPath + ":" + $_.Exception.Message)
   }
@@ -253,7 +277,7 @@ function LDREC-ReadReceiptFromOutput(
     if(-not $text.StartsWith("{")){ continue }
 
     try {
-      $candidate = $text | ConvertFrom-Json -ErrorAction Stop
+      $candidate = LDREC-ConvertFromJson $text
     } catch {
       if($text.Contains($ExpectedSchema)){
         LDREC-Die "RECEIPT_JSON_INVALID" ($ExpectedSchema + ":" + $_.Exception.Message)
@@ -308,9 +332,11 @@ function LDREC-ExportModuleInfo(){
     provides = @(
       "LDREC-ToCanonJson",
       "LDREC-HexSha256Bytes",
+      "LDREC-HexSha256File",
       "LDREC-HexSha256TextLf",
       "LDREC-ReceiptPath",
       "LDREC-AppendReceipt",
+      "LDREC-ConvertFromJson",
       "LDREC-AssertReceiptAgainstSchema",
       "LDREC-ReadReceiptFromOutput",
       "LDREC-RunReceiptScript"

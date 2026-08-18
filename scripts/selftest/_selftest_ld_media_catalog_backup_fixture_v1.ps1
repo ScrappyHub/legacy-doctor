@@ -70,8 +70,8 @@ foreach($row in @($first.files)){
   EnsureDir (Split-Path -Parent $destinationPath)
   [IO.File]::Copy($sourcePath,$destinationPath,$true)
 
-  $sourceHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
-  $destinationHash = (Get-FileHash -LiteralPath $destinationPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $sourceHash = LDREC-HexSha256File $sourcePath
+  $destinationHash = LDREC-HexSha256File $destinationPath
   Require ($sourceHash -ceq [string]$row.sha256) "SOURCE_HASH_CHANGED" ([string]$row.relative_path)
   Require ($destinationHash -ceq $sourceHash) "BACKUP_HASH_MISMATCH" ([string]$row.relative_path)
 }

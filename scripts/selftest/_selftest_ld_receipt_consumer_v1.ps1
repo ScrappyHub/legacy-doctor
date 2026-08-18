@@ -44,6 +44,7 @@ $validJson = $valid | ConvertTo-Json -Depth 10 -Compress
 
 $parsed = LDREC-ReadReceiptFromOutput -Output @("diagnostic",$validJson,"SUCCESS_TOKEN") -ExpectedSchema $schemaName -SchemaDirectory $schemaDirectory
 if(([string]$parsed.error_code) -ne "SELFTEST_UNAVAILABLE"){ Die "VALID_RECEIPT_NOT_RETURNED" ([string]$parsed.error_code) }
+if($parsed.created_utc -isnot [string]){ Die "DATETIME_STRING_NOT_PRESERVED" $parsed.created_utc.GetType().FullName }
 
 $missingRequired = [ordered]@{}
 foreach($key in $valid.Keys){ if($key -ne "error"){ $missingRequired[$key] = $valid[$key] } }

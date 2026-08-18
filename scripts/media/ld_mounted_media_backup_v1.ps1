@@ -124,19 +124,19 @@ if($executionAllowed){
   foreach($row in $rows){
     $tempPath = [string]$row.destination_path + ".legacy-doctor.partial"
     try {
-      $sourceHashBefore = (Get-FileHash -LiteralPath $row.source_path -Algorithm SHA256).Hash.ToLowerInvariant()
+      $sourceHashBefore = LDREC-HexSha256File $row.source_path
       if($sourceHashBefore -cne [string]$row.expected_sha256){ throw "SOURCE_CHANGED_BEFORE_COPY" }
 
       EnsureDir (Split-Path -Parent ([string]$row.destination_path))
       $writeAttempted = $true
       [IO.File]::Copy([string]$row.source_path,$tempPath,$false)
-      $tempHash = (Get-FileHash -LiteralPath $tempPath -Algorithm SHA256).Hash.ToLowerInvariant()
+      $tempHash = LDREC-HexSha256File $tempPath
       if($tempHash -cne [string]$row.expected_sha256){ throw "TEMP_HASH_MISMATCH" }
 
       [IO.File]::Move($tempPath,[string]$row.destination_path)
       $createdFiles += [string]$row.destination_path
-      $destinationHash = (Get-FileHash -LiteralPath $row.destination_path -Algorithm SHA256).Hash.ToLowerInvariant()
-      $sourceHashAfter = (Get-FileHash -LiteralPath $row.source_path -Algorithm SHA256).Hash.ToLowerInvariant()
+      $destinationHash = LDREC-HexSha256File $row.destination_path
+      $sourceHashAfter = LDREC-HexSha256File $row.source_path
       if($destinationHash -cne [string]$row.expected_sha256){ throw "DESTINATION_HASH_MISMATCH" }
       if($sourceHashAfter -cne [string]$row.expected_sha256){ throw "SOURCE_CHANGED_DURING_COPY" }
 

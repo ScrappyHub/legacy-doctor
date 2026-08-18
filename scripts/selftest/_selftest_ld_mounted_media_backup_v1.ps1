@@ -28,16 +28,16 @@ Write-Fixture $source "VIDEO_TS\VIDEO_TS.IFO" "owned-fixture-dvd"
 Write-Fixture $source "ROMS\game.nes" "owned-fixture-rom"
 Write-Fixture $source "archive\device.cos" "owned-fixture-cos"
 
-$sourceHashes = @{}
-foreach($file in @(Get-ChildItem -LiteralPath $source -File -Recurse)){
-  $sourceHashes[$file.FullName] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-}
-
 $library = Join-Path $RepoRoot "scripts\storage\_lib_ld_receipts_v1.ps1"
 $backupScript = Join-Path $RepoRoot "scripts\media\ld_mounted_media_backup_v1.ps1"
 if(-not (Test-Path -LiteralPath $library -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $library }
 if(-not (Test-Path -LiteralPath $backupScript -PathType Leaf)){ Die "BACKUP_SCRIPT_MISSING" $backupScript }
 . $library
+
+$sourceHashes = @{}
+foreach($file in @(Get-ChildItem -LiteralPath $source -File -Recurse)){
+  $sourceHashes[$file.FullName] = LDREC-HexSha256File $file.FullName
+}
 
 function Run-Backup([string]$Destination,[int]$MaxFiles,[bool]$ExecuteNow){
   $childArgs = @("-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",$backupScript,"-RepoRoot",$RepoRoot,"-SourceRoot",$source,"-DestinationRoot",$Destination,"-MaxFiles",[string]$MaxFiles,"-MaxBytes","1048576")
@@ -62,13 +62,13 @@ Require ([bool]$executed.write_probe_ok) "WRITE_PROBE_NOT_OK" ""
 
 foreach($row in @($executed.rows)){
   Require (([string]$row.status) -eq "COPIED_VERIFIED") "ROW_NOT_VERIFIED" ([string]$row.relative_path)
-  $destinationHash = (Get-FileHash -LiteralPath ([string]$row.destination_path) -Algorithm SHA256).Hash.ToLowerInvariant()
+  $destinationHash = LDREC-HexSha256File ([string]$row.destination_path)
   Require ($destinationHash -ceq [string]$row.expected_sha256) "DESTINATION_HASH_BAD" ([string]$row.relative_path)
   Require ($destinationHash -ceq [string]$row.destination_sha256) "RECEIPT_HASH_BAD" ([string]$row.relative_path)
 }
 
 foreach($sourcePath in $sourceHashes.Keys){
-  $afterHash = (Get-FileHash -LiteralPath $sourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $afterHash = LDREC-HexSha256File $sourcePath
   Require ($afterHash -ceq [string]$sourceHashes[$sourcePath]) "SOURCE_MODIFIED" $sourcePath
 }
 Require (@(Get-ChildItem -LiteralPath $destination -File -Recurse -Filter "*.legacy-doctor.partial").Count -eq 0) "PARTIAL_FILE_LEFT_BEHIND" ""

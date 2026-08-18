@@ -85,7 +85,7 @@ foreach($file in $discovered){
   $rows += ,([ordered]@{
     relative_path = $relative
     size_bytes = $length
-    sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    sha256 = LDREC-HexSha256File $file.FullName
     category = [string]$classification.category
     format_hint = [string]$classification.format_hint
     classification_basis = [string]$classification.basis

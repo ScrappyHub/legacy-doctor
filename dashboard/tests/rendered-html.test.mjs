@@ -24,7 +24,9 @@ test("server-renders the Legacy Doctor dashboard", async () => {
   assert.match(html, /Clone drive/);
   assert.match(html, /VHS/);
   assert.match(html, /HDD \/ NVMe/);
-  assert.match(html, /representative device data/);
+  assert.match(html, /Verified hardware snapshot/);
+  assert.match(html, /Apple iPod Shuffle/);
+  assert.match(html, /10 of 10 hashes matched/);
   assert.match(html, /destructive actions disabled/);
 });
 
@@ -35,7 +37,7 @@ test("keeps device writes gated and the layout responsive", async () => {
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(page, /requires a verified restore point and explicit approval/);
-  assert.match(page, /no device writes enabled/);
+  assert.match(page, /destructive actions disabled/);
   assert.match(page, /useMemo/);
   assert.match(page, /setSelected/);
   assert.match(css, /@media\(max-width:760px\)/);
