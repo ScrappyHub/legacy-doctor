@@ -54,6 +54,7 @@ $workflowPath = Join-Path $RepoRoot ".github\workflows\verify.yml"
 if(-not (Test-Path -LiteralPath $workflowPath -PathType Leaf)){ Die "CI_WORKFLOW_MISSING" $workflowPath }
 
 $governancePaths = @(
+  (Join-Path $RepoRoot ".gitattributes"),
   (Join-Path $RepoRoot "AGENTS.md"),
   (Join-Path $RepoRoot "CLAUDE.md"),
   (Join-Path $RepoRoot "docs\canonical\ECOSYSTEM_INTEGRATION.md"),
