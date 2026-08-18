@@ -85,10 +85,22 @@ foreach($catalogRow in @($catalog.files)){
   $destinationPath = Join-Path $DestinationRoot $relative.Replace("/","\")
   $tempPath = $destinationPath + ".legacy-doctor.partial"
   $rowBlockers = @()
+  $destinationHash = ""
+  $rowStatus = "PLANNED"
   if(-not (PathUnderRoot -Root $DestinationRoot -Path $destinationPath)){ $rowBlockers = Add-Unique $rowBlockers "DESTINATION_ESCAPE" }
-  if(Test-Path -LiteralPath $destinationPath){ $rowBlockers = Add-Unique $rowBlockers "DESTINATION_COLLISION" }
+  if(Test-Path -LiteralPath $destinationPath -PathType Leaf){
+    $destinationHash = LDREC-HexSha256File $destinationPath
+    if($destinationHash -ceq [string]$catalogRow.sha256){
+      $rowStatus = "SKIP_DUPLICATE_VERIFIED"
+    } else {
+      $rowBlockers = Add-Unique $rowBlockers "DESTINATION_COLLISION"
+    }
+  } elseif(Test-Path -LiteralPath $destinationPath) {
+    $rowBlockers = Add-Unique $rowBlockers "DESTINATION_COLLISION"
+  }
   if(Test-Path -LiteralPath $tempPath){ $rowBlockers = Add-Unique $rowBlockers "STALE_PARTIAL_COLLISION" }
   foreach($rowBlocker in $rowBlockers){ $blockers = Add-Unique $blockers $rowBlocker }
+  if(@($rowBlockers).Count -gt 0){ $rowStatus = "BLOCKED" }
 
   $rows += ,([ordered]@{
     relative_path = $relative
@@ -96,9 +108,9 @@ foreach($catalogRow in @($catalog.files)){
     destination_path = $destinationPath
     size_bytes = [Int64]$catalogRow.size_bytes
     expected_sha256 = [string]$catalogRow.sha256
-    destination_sha256 = ""
+    destination_sha256 = $destinationHash
     category = [string]$catalogRow.category
-    status = $(if(@($rowBlockers).Count -eq 0){ "PLANNED" } else { "BLOCKED" })
+    status = $rowStatus
     blockers = @($rowBlockers)
   })
 }
@@ -116,12 +128,20 @@ $executionAllowed = ($Execute.IsPresent -and $preflightReady)
 $copiedCount = 0
 $copiedBytes = [Int64]0
 $verifiedCount = 0
+$duplicateCount = 0
+$skippedCount = 0
 $writeAttempted = $false
 $executionFailed = $false
 $createdFiles = @()
 
 if($executionAllowed){
   foreach($row in $rows){
+    if(([string]$row.status) -eq "SKIP_DUPLICATE_VERIFIED"){
+      $verifiedCount++
+      $duplicateCount++
+      $skippedCount++
+      continue
+    }
     $tempPath = [string]$row.destination_path + ".legacy-doctor.partial"
     try {
       $sourceHashBefore = LDREC-HexSha256File $row.source_path
@@ -204,6 +224,8 @@ $receipt = [ordered]@{
   copied_file_count = [int]$copiedCount
   copied_bytes = [Int64]$copiedBytes
   verified_file_count = [int]$verifiedCount
+  duplicate_file_count = [int]$duplicateCount
+  skipped_file_count = [int]$skippedCount
   write_probe_ok = [bool]$writeProbeOk
   rollback_performed = [bool]$rollbackPerformed
   rollback_ok = [bool]$rollbackOk

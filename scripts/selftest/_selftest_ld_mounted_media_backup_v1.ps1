@@ -73,10 +73,20 @@ foreach($sourcePath in $sourceHashes.Keys){
 }
 Require (@(Get-ChildItem -LiteralPath $destination -File -Recurse -Filter "*.legacy-doctor.partial").Count -eq 0) "PARTIAL_FILE_LEFT_BEHIND" ""
 
+$duplicates = Run-Backup -Destination $destination -MaxFiles 20 -ExecuteNow $true
+Require ([bool]$duplicates.ok) "DUPLICATE_RUN_NOT_OK" ([string]$duplicates.execution_status)
+Require ([int]$duplicates.duplicate_file_count -eq 4) "DUPLICATE_COUNT_BAD" ([string]$duplicates.duplicate_file_count)
+Require ([int]$duplicates.skipped_file_count -eq 4) "SKIPPED_COUNT_BAD" ([string]$duplicates.skipped_file_count)
+Require ([int]$duplicates.copied_file_count -eq 0) "DUPLICATE_RUN_COPIED_FILES" ([string]$duplicates.copied_file_count)
+Require (-not [bool]$duplicates.writes_destination) "DUPLICATE_RUN_WROTE_DESTINATION" ""
+foreach($row in @($duplicates.rows)){ Require (([string]$row.status) -eq "SKIP_DUPLICATE_VERIFIED") "DUPLICATE_ROW_STATUS_BAD" ([string]$row.relative_path) }
+
+$changedDestination = [string]$executed.rows[0].destination_path
+[IO.File]::WriteAllBytes($changedDestination,[Text.Encoding]::UTF8.GetBytes("different-existing-bytes"))
 $collision = Run-Backup -Destination $destination -MaxFiles 20 -ExecuteNow $true
-Require (-not [bool]$collision.ok) "COLLISION_NOT_BLOCKED" ""
-Require (@($collision.blockers) -contains "DESTINATION_COLLISION") "COLLISION_REASON_MISSING" ""
-Require ([int]$collision.copied_file_count -eq 0) "COLLISION_COPIED_FILES" ([string]$collision.copied_file_count)
+Require (-not [bool]$collision.ok) "MISMATCHED_COLLISION_NOT_BLOCKED" ""
+Require (@($collision.blockers) -contains "DESTINATION_COLLISION") "MISMATCHED_COLLISION_REASON_MISSING" ""
+Require ([int]$collision.copied_file_count -eq 0) "MISMATCHED_COLLISION_COPIED_FILES" ([string]$collision.copied_file_count)
 
 $overlap = Join-Path $source "destination_inside_source"
 EnsureDir $overlap
@@ -92,5 +102,6 @@ Require (@(Get-ChildItem -LiteralPath $boundedDestination -File -Recurse).Count 
 Write-Output "PASS: dry run planned without destination writes"
 Write-Output "PASS: execute copied and independently verified four files"
 Write-Output "PASS: source bytes remained unchanged and no partials remained"
-Write-Output "PASS: collisions, path overlap, and truncated catalogs fail closed"
+Write-Output "PASS: matching hashes skip as duplicates while mismatched collisions fail closed"
+Write-Output "PASS: path overlap and truncated catalogs fail closed"
 Write-Output "SELFTEST_LD_MOUNTED_MEDIA_BACKUP_OK"

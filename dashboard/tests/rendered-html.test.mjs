@@ -16,18 +16,13 @@ test("server-renders the Legacy Doctor dashboard", async () => {
   const html = await response.text();
   assert.match(html, /<title>Legacy Doctor — Media Operations<\/title>/i);
   assert.match(html, /Connected devices/);
-  assert.match(html, /Unified library/);
-  assert.match(html, /Backups &amp; recovery/);
-  assert.match(html, /Assign drive letter/);
-  assert.match(html, /Format media/);
-  assert.match(html, /Create disk image/);
-  assert.match(html, /Clone drive/);
-  assert.match(html, /VHS/);
-  assert.match(html, /HDD \/ NVMe/);
+  assert.match(html, /This machine/);
+  assert.match(html, /AMD Ryzen 7 5800X/);
+  assert.match(html, /NVIDIA GeForce RTX 4060/);
   assert.match(html, /Verified hardware snapshot/);
   assert.match(html, /Apple iPod Shuffle/);
   assert.match(html, /10 of 10 hashes matched/);
-  assert.match(html, /destructive actions disabled/);
+  assert.match(html, /Verified local snapshot/);
 });
 
 test("keeps device writes gated and the layout responsive", async () => {
@@ -36,8 +31,12 @@ test("keeps device writes gated and the layout responsive", async () => {
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /requires a verified restore point and explicit approval/);
-  assert.match(page, /destructive actions disabled/);
+  assert.match(page, /remains disabled until a verified restore point and explicit approval exist/);
+  assert.match(page, /Skip verified duplicates/);
+  assert.match(page, /SHA-256 proven/);
+  assert.match(page, /Encryption not configured/);
+  assert.match(page, /Signing not configured/);
+  assert.match(page, /Manage device/);
   assert.match(page, /useMemo/);
   assert.match(page, /setSelected/);
   assert.match(css, /@media\(max-width:760px\)/);
