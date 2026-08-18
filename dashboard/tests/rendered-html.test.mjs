@@ -34,8 +34,11 @@ test("keeps device writes gated and the layout responsive", async () => {
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(page, /remains disabled until device-write safeguards and explicit approval exist/);
-  assert.match(page, /Read-only imaging is proven/);
+  assert.match(page, /Read-only imaging and safe mount planning are active/);
   assert.match(page, /hardware restore remains locked/);
+  assert.match(page, /Safe drive-letter plan · no changes made/);
+  assert.match(page, /0 eligible/);
+  assert.match(page, /DVD imaging engine verified/);
   assert.match(page, /Skip verified duplicates/);
   assert.match(page, /SHA-256 proven/);
   assert.match(page, /Encryption not configured/);

@@ -31,7 +31,7 @@ Legacy Doctor owns:
 Legacy Doctor does not own:
 
 - Storage formatting or filesystem repair.
-- Raw-device imaging in the supported Storage-03 scope.
+- Unbounded or implicit raw-device imaging. A bounded read-only imaging extension is proposed below but is not canonical ownership.
 - Destructive recovery.
 - Long-term blob preservation.
 - Identity, signing, consent policy, or ecosystem-wide trust decisions.
@@ -39,7 +39,7 @@ Legacy Doctor does not own:
 
 ## Safety boundary
 
-Supported lanes do not modify source media. The mounted-media backup lane may copy a bounded catalog into an explicit, non-overlapping destination after a write probe. It refuses existing destination files, verifies temporary and finalized SHA-256 values, and rolls back files created by a failed run. Device-protocol backup, raw imaging, and unbounded copying are not implemented.
+Supported lanes do not modify source media. The mounted-media backup lane may copy a bounded catalog into an explicit, non-overlapping destination after a write probe. It refuses existing destination files, verifies temporary and finalized SHA-256 values, and rolls back files created by a failed run. A proposed bounded imaging extension now pins device identity and exact size, excludes boot/system and same-disk targets, verifies source/image/source-re-read SHA-256, and validates rollback only into a disposable file. Read-only drive-letter planning is also implemented without an assignment path. These extensions do not change the canonical `unclassified` role and require ecosystem approval before becoming owned scope. Device-protocol backup, physical-device restore, drive-letter assignment, and unbounded copying are not implemented.
 
 Historical FAT32 formatter code is quarantined and is not a supported capability.
 
