@@ -39,6 +39,12 @@ test("keeps device writes gated and the layout responsive", async () => {
   assert.match(page, /Safe drive-letter plan · no changes made/);
   assert.match(page, /0 eligible/);
   assert.match(page, /DVD imaging engine verified/);
+  assert.match(page, /Wii Fit disc/);
+  assert.match(page, /Choose upload destination/);
+  assert.match(page, /Clear a backup copy/);
+  assert.match(page, /Erase source disc/);
+  assert.match(page, /OPTICAL_LENGTH_UNAVAILABLE/);
+  assert.match(page, /Reader incompatible/);
   assert.match(page, /Skip verified duplicates/);
   assert.match(page, /SHA-256 proven/);
   assert.match(page, /Encryption not configured/);
