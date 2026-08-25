@@ -29,6 +29,8 @@ Legacy Doctor should preserve accessible user-owned content from legacy storage 
 ## Content lifecycle boundary
 
 Verified artifacts may be kept locally or passed to a future explicit upload adapter. Upload requires a user-chosen provider/destination and must preserve the content hash and receipt. Clearing is destination-scoped: only an explicitly selected backup copy may be removed after verification and separate approval. Source media, including pressed optical discs, is never treated as a clearable destination. Rewritable-media erasure would be a separate destructive capability with its own contract and is not implemented.
+
+The implemented destination-profile extension gives the future interface one backend call for dry-run or confirmed setup. It creates a versioned managed root, mode-specific content folders, staging and upload queues, receipt storage, destination-copy quarantine, and isolated per-device workspaces. It refuses unmanaged nonempty roots, path escapes, malformed identities, corrupt profiles, and partial collisions. This local workflow does not claim Archive Recall's canonical preservation ownership.
 | Drive-letter planning | Recognized Windows data partitions without letters | Positive/negative deterministic fixtures plus actual five-disk/eight-partition scan | A free letter can be recommended without mutation only for a recognized, non-system, non-hidden, non-raw data volume | Assignment is not implemented; actual scan found zero eligible volumes because all unlettered partitions are protected system partitions |
 
 ## Oldest-to-newest adapter strategy
