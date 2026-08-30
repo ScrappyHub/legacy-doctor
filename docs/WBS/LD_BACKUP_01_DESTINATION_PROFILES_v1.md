@@ -73,9 +73,10 @@ The future setup button calls the one-click script first without `-Execute` and 
 
 ## Current non-claims
 
-- No cloud provider or network credential is configured.
-- No backup scheduling policy is implemented.
-- No retention or permanent-deletion executor is implemented.
+- No cloud provider or network credential is configured. The first verified adapter targets a local folder or mounted network share.
+- Schedule policies are now persisted, but this version does not install or run an operating-system scheduler.
+- Retention planning and reversible quarantine are implemented; permanent deletion is intentionally unavailable.
 - No canonical long-term-preservation ownership is claimed.
 - Destination creation does not itself copy source content.
 
+The next backend layer is specified and proven in `LD_BACKUP_02_BACKEND_LIFECYCLE_v1.md`.
