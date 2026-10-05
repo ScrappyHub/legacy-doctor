@@ -4,7 +4,7 @@
 
 Provide the backend contract that a future Legacy Doctor interface can call after a user chooses a backup destination. The interface does not construct paths, invent folder names, or infer whether an existing directory is safe.
 
-This implementation does not change the canonical `unclassified` ecosystem role. It is a standalone local workflow proposal until ownership is approved.
+This implementation falls under the approved `workflow.storage-recovery` role (destination profiles and workspaces are owned scope).
 
 ## One-click contract
 

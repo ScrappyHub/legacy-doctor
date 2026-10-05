@@ -39,6 +39,38 @@ function CanonicalPath([string]$Path){
   return [IO.Path]::GetFullPath($Path).TrimEnd("\")
 }
 
+function IsReparsePoint([string]$Path){
+  if(-not (Test-Path -LiteralPath $Path)){ return $false }
+  try {
+    $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+    return (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)
+  } catch {
+    return $true
+  }
+}
+
+function ExistingPathHasReparsePoint([string]$Path){
+  try {
+    $current = [IO.Path]::GetFullPath($Path)
+    while(-not [string]::IsNullOrWhiteSpace($current)){
+      if(Test-Path -LiteralPath $current){
+        if(IsReparsePoint $current){ return $true }
+        $item = Get-Item -LiteralPath $current -Force -ErrorAction Stop
+        $parentItem = $item.PSObject.Properties["Parent"]
+        if($null -eq $parentItem -or $null -eq $parentItem.Value){ break }
+        $current = [string]$parentItem.Value.FullName
+        continue
+      }
+      $parent = Split-Path -Parent $current
+      if([string]::IsNullOrWhiteSpace($parent) -or $parent -ceq $current){ break }
+      $current = $parent
+    }
+  } catch {
+    return $true
+  }
+  return $false
+}
+
 function SameOrNested([string]$A,[string]$B){
   $aFull = CanonicalPath $A
   $bFull = CanonicalPath $B
@@ -69,6 +101,15 @@ if(-not $destinationExists){ $blockers = Add-Unique $blockers "DESTINATION_MISSI
 if((CanonicalPath $DestinationRoot).Equals((CanonicalPath $RepoRoot),[StringComparison]::OrdinalIgnoreCase)){
   $blockers = Add-Unique $blockers "REPO_ROOT_DESTINATION_FORBIDDEN"
 }
+if(IsReparsePoint $SourceRoot){
+  $blockers = Add-Unique $blockers "SOURCE_ROOT_REPARSE_POINT_FORBIDDEN"
+}
+if($destinationExists -and (IsReparsePoint $DestinationRoot)){
+  $blockers = Add-Unique $blockers "DESTINATION_ROOT_REPARSE_POINT_FORBIDDEN"
+}
+if($destinationExists -and (ExistingPathHasReparsePoint $DestinationRoot)){
+  $blockers = Add-Unique $blockers "DESTINATION_PATH_REPARSE_POINT_FORBIDDEN"
+}
 if((SameOrNested -A $DestinationRoot -B $SourceRoot) -or (SameOrNested -A $SourceRoot -B $DestinationRoot)){
   $blockers = Add-Unique $blockers "SOURCE_DESTINATION_OVERLAP"
 }
@@ -88,6 +129,10 @@ foreach($catalogRow in @($catalog.files)){
   $destinationHash = ""
   $rowStatus = "PLANNED"
   if(-not (PathUnderRoot -Root $DestinationRoot -Path $destinationPath)){ $rowBlockers = Add-Unique $rowBlockers "DESTINATION_ESCAPE" }
+  if(-not (PathUnderRoot -Root $SourceRoot -Path $sourcePath)){ $rowBlockers = Add-Unique $rowBlockers "SOURCE_ESCAPE" }
+  if(([string]$catalogRow.sha256) -notmatch "^[a-fA-F0-9]{64}$"){ $rowBlockers = Add-Unique $rowBlockers "EXPECTED_SHA256_INVALID" }
+  if(ExistingPathHasReparsePoint $sourcePath){ $rowBlockers = Add-Unique $rowBlockers "SOURCE_PATH_REPARSE_POINT_FORBIDDEN" }
+  if(ExistingPathHasReparsePoint (Split-Path -Parent $destinationPath)){ $rowBlockers = Add-Unique $rowBlockers "DESTINATION_PATH_REPARSE_POINT_FORBIDDEN" }
   if(Test-Path -LiteralPath $destinationPath -PathType Leaf){
     $destinationHash = LDREC-HexSha256File $destinationPath
     if($destinationHash -ceq [string]$catalogRow.sha256){
@@ -133,6 +178,19 @@ $skippedCount = 0
 $writeAttempted = $false
 $executionFailed = $false
 $createdFiles = @()
+$createdDirs = @()
+
+function EnsureDirTracked([string]$Path){
+  if(Test-Path -LiteralPath $Path -PathType Container){ return }
+  $parent = Split-Path -Parent $Path
+  if(-not [string]::IsNullOrWhiteSpace($parent) -and -not (Test-Path -LiteralPath $parent -PathType Container)){
+    EnsureDirTracked $parent
+  }
+  if(-not (Test-Path -LiteralPath $Path -PathType Container)){
+    New-Item -ItemType Directory -Force -Path $Path | Out-Null
+    $script:createdDirs += [string]$Path
+  }
+}
 
 if($executionAllowed){
   foreach($row in $rows){
@@ -147,7 +205,7 @@ if($executionAllowed){
       $sourceHashBefore = LDREC-HexSha256File $row.source_path
       if($sourceHashBefore -cne [string]$row.expected_sha256){ throw "SOURCE_CHANGED_BEFORE_COPY" }
 
-      EnsureDir (Split-Path -Parent ([string]$row.destination_path))
+      EnsureDirTracked (Split-Path -Parent ([string]$row.destination_path))
       $writeAttempted = $true
       [IO.File]::Copy([string]$row.source_path,$tempPath,$false)
       $tempHash = LDREC-HexSha256File $tempPath
@@ -183,6 +241,15 @@ if($executionFailed){
   foreach($createdFile in @($createdFiles)){
     try {
       if(Test-Path -LiteralPath $createdFile -PathType Leaf){ Remove-Item -LiteralPath $createdFile -Force }
+    } catch {
+      $rollbackOk = $false
+    }
+  }
+  foreach($createdDir in @($createdDirs | Sort-Object Length -Descending)){
+    try {
+      if((Test-Path -LiteralPath $createdDir -PathType Container) -and (@(Get-ChildItem -LiteralPath $createdDir -Force).Count -eq 0)){
+        Remove-Item -LiteralPath $createdDir -Force
+      }
     } catch {
       $rollbackOk = $false
     }

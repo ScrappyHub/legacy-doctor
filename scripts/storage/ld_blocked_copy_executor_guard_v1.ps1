@@ -146,7 +146,7 @@ if(@($guardActions).Count -eq 0){
   $reasons = Add-Unique $reasons "all executor guard gates passed, but this lane still performs no copy"
 }
 
-$wouldInvokeFutureExecutor = (@($guardActions).Count -eq 1 -and $guardActions[0] -eq "EXECUTOR_GUARD_WOULD_ALLOW_FUTURE_COPY_EXECUTOR")
+$wouldInvokeFutureExecutor = (@($guardActions | Where-Object { [string]$_ -ceq "EXECUTOR_GUARD_WOULD_ALLOW_FUTURE_COPY_EXECUTOR" }).Count -eq 1 -and @($guardActions).Count -eq 1)
 
 $actionCounts = [ordered]@{}
 foreach($a in @($guardActions)){
