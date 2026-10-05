@@ -5,7 +5,7 @@
 
 This repository is the `legacy-doctor` service inside the Atlas Systems deterministic software ecosystem.
 
-**Canonical role:** Repository discovered under C:\dev. Canonical ecosystem role requires classification.
+**Canonical role:** Receipt-backed, non-destructive storage recovery and backup instrument that inventories visible devices, classifies readable backup candidates, evaluates destinations, builds and verifies bounded manifests, and blocks unsafe execution until every copy condition is explicitly proven. Layer: `workflow.storage-recovery`.
 
 Before auditing, planning, refactoring, or editing this repository, read:
 

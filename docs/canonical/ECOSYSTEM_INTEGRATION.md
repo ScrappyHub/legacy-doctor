@@ -6,32 +6,45 @@
 |---|---|
 | Service ID | `legacy-doctor` |
 | Canonical name | legacy-doctor |
-| Ecosystem layer | `unclassified` |
+| Ecosystem layer | `workflow.storage-recovery` |
 | Standalone-first | `true` |
 
 ## Role
 
-Repository discovered under C:\dev. Canonical ecosystem role requires classification.
+Receipt-backed, non-destructive storage recovery and backup instrument that inventories visible devices, classifies readable backup candidates, evaluates destinations, builds and verifies bounded manifests, and blocks unsafe execution until every copy condition is explicitly proven.
 
 ## This service owns
 
-- UNCLASSIFIED
+- Non-destructive Windows storage observation and explicit unavailable states
+- Backup-readiness classification
+- File-source planning and bounded dry-run enumeration
+- Destination suitability, bounded destination write probes, and backup destination profiles and workspaces
+- Copy-manifest construction and verification, execution preflight, run contracts, and executor guards
+- Bounded hash-verified mounted-file copy between explicit non-overlapping directories, post-copy verification, restart idempotency, and backup-set seal
+- Bounded read-only device imaging with pinned identity and verified restore into disposable files
+- Local receipts describing observations, decisions, refusals, and bounded probe results
 
 ## This service does not own
 
-- No ownership boundaries approved yet
+- Storage formatting or filesystem repair
+- Unbounded or implicit raw-device imaging or copying
+- Destructive recovery, repair, wipe, or physical-device restore
+- Native mobile-device protocols
+- Long-term blob preservation, snapshot, and restore authority (archive-recall, triad)
+- Identity, signing, consent policy, or ecosystem-wide trust decisions (neverlost, covenant-gate)
 
 ## Upstream services
 
-- None
+- `archive-recall`, optional: integration only through explicit versioned packet contracts. Legacy Doctor is standalone-correct without it.
 
 ## Downstream consumers or operators
 
-- None
+- Operators
 
 ## Contract families
 
-- Not yet classified
+- `receipt`
+- `manifest`
 
 ## Integration rules
 

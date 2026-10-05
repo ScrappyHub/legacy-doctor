@@ -82,11 +82,11 @@ try {
 }
 if(([string]$projectContract.project_id) -cne "legacy-doctor"){ Die "PROJECT_CONTRACT_ID_MISMATCH" ([string]$projectContract.project_id) }
 if(([string]$projectContract.ecosystem.service_id) -cne "legacy-doctor"){ Die "PROJECT_CONTRACT_SERVICE_ID_MISMATCH" ([string]$projectContract.ecosystem.service_id) }
-if(([string]$projectContract.ecosystem.layer) -cne "unclassified"){ Die "PROJECT_CONTRACT_UNAPPROVED_LAYER" ([string]$projectContract.ecosystem.layer) }
+if(([string]$projectContract.ecosystem.layer) -cne "workflow.storage-recovery"){ Die "PROJECT_CONTRACT_UNAPPROVED_LAYER" ([string]$projectContract.ecosystem.layer) }
 
 $integrationText = Get-Content -LiteralPath (Join-Path $RepoRoot "docs\canonical\ECOSYSTEM_INTEGRATION.md") -Raw
 if(-not $integrationText.Contains("| Service ID | ``legacy-doctor`` |")){ Die "CANONICAL_INTEGRATION_SERVICE_ID_MISSING" "legacy-doctor" }
-if(-not $integrationText.Contains("| Ecosystem layer | ``unclassified`` |")){ Die "CANONICAL_INTEGRATION_LAYER_MISMATCH" "unclassified" }
+if(-not $integrationText.Contains("| Ecosystem layer | ``workflow.storage-recovery`` |")){ Die "CANONICAL_INTEGRATION_LAYER_MISMATCH" "workflow.storage-recovery" }
 
 $rejectedLegacyPaths = @(
   (Join-Path $RepoRoot "lib\doctor-common.ps1"),

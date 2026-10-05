@@ -1,6 +1,6 @@
 # Proposal: Legacy Doctor service identity v1
 
-Status: proposed; not yet canonical
+Status: approved 2026-10-05 by the maintainer as layer `workflow.storage-recovery`. Ownership widened to the shipped bounded-copy, backup-set seal, and bounded read-only imaging lanes. The ecosystem service map and registry were updated in the same change; a new service-map receipt must be emitted by running `C:\dev\_ecosystem\scripts\_RUN_service_map_doctor_v1.ps1`.
 
 ## Proposed role
 
@@ -39,7 +39,7 @@ Legacy Doctor does not own:
 
 ## Safety boundary
 
-Supported lanes do not modify source media. The mounted-media backup lane may copy a bounded catalog into an explicit, non-overlapping destination after a write probe. It refuses existing destination files, verifies temporary and finalized SHA-256 values, and rolls back files created by a failed run. A proposed bounded imaging extension now pins device identity and exact size, excludes boot/system and same-disk targets, verifies source/image/source-re-read SHA-256, and validates rollback only into a disposable file. Read-only drive-letter planning is also implemented without an assignment path. These extensions do not change the canonical `unclassified` role and require ecosystem approval before becoming owned scope. Device-protocol backup, physical-device restore, drive-letter assignment, and unbounded copying are not implemented.
+Supported lanes do not modify source media. The mounted-media backup lane may copy a bounded catalog into an explicit, non-overlapping destination after a write probe. It refuses existing destination files, verifies temporary and finalized SHA-256 values, and rolls back files created by a failed run. A proposed bounded imaging extension now pins device identity and exact size, excludes boot/system and same-disk targets, verifies source/image/source-re-read SHA-256, and validates rollback only into a disposable file. Read-only drive-letter planning is also implemented without an assignment path. These extensions were approved as owned scope together with the layer on 2026-10-05. Device-protocol backup, physical-device restore, drive-letter assignment, and unbounded copying are not implemented.
 
 Historical FAT32 formatter code is quarantined and is not a supported capability.
 
