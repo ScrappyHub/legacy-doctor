@@ -1,6 +1,6 @@
 # Proposal: Storage-03R2 automatic interruption recovery v1
 
-Status: design only; no code. Implementation is deliberately held until the current verifier run is green on Windows, because this lane touches destination bytes after a crash.
+Status: implemented as `scripts/storage/ld_storage03_interruption_recovery_v1.ps1` (see `docs/WBS/LD_STORAGE_03R2_INTERRUPTION_RECOVERY_v1.md`). Deviation from this design: the intent journal (item 1) is deferred, and item 2 is satisfied by proving the partial is an exact byte prefix of the current source, which needs no change to the working executor. A real killed-process test is still outstanding.
 
 ## Problem
 

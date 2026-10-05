@@ -24,6 +24,7 @@ Changed:
 - Closed schemas added for the hashed catalog and backup-set content bodies, raw-disk facts, and the quarantined FAT32 plan and verify documents.
 - New self-tests: lane conformance (every lane has coverage, every emitted receipt has a schema, destructive primitives only behind the formatter quarantine) and fail-closed raw/optical acquisition.
 - `scripts/_scratch/` is no longer tracked.
+- Storage-03R2: stale-partial recovery lane. Exact-prefix classification against the source, governed non-destructive quarantine, closed receipt, and positive/negative self-test.
 
 Open: Storage-03T named-device evidence destination matrix, real-device conformance, automatic interruption recovery, release packaging.
 

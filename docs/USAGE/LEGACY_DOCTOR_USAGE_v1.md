@@ -25,6 +25,7 @@ inventory → mount state → health probe → read probe → backup readiness
 → 03Q independent post-copy verification
 → 03R durable-prefix restart/idempotency proof
 → 03S backup-set seal and portable verification
+→ 03R2 stale-partial recovery (only after an interrupted copy)
 ```
 
 The 03O proof runner is:
@@ -66,6 +67,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\_RUN_legacy_doct
 ```
 
 It seals relative payload paths and hashes, verifies a copied workspace, and rejects tampered or extra payload files. The seal is integrity evidence, not encryption or a signature.
+
+## Recovering from an interrupted copy
+
+If a bounded copy was interrupted, the executor blocks on the leftover `*.legacy-doctor.partial` file by design. Review the plan first, then recover:
+
+```text
+# Plan only: classifies each partial, changes nothing
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\storage\ld_storage03_interruption_recovery_v1.ps1 -RepoRoot . -SourceRoot <source> -DestinationRoot <destination> -RecoverStalePartials
+
+# Quarantine recoverable partials (moves, never deletes), then rerun the normal copy
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\storage\ld_storage03_interruption_recovery_v1.ps1 -RepoRoot . -SourceRoot <source> -DestinationRoot <destination> -RecoverStalePartials -Execute
+```
+
+A partial is recoverable only if it is an exact byte prefix of the current source file and no final file exists. If any partial is not recoverable, nothing is moved and the receipt says why. Quarantined files are under `<destination>\quarantine\stale-partials\<run id>\` for you to inspect or delete yourself.
 
 ## Destination/workspace setup
 
