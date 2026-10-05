@@ -24,7 +24,7 @@ The roadmap is governed by [LEGACY_DOCTOR_MASTER_WBS_v1.md](WBS/LEGACY_DOCTOR_MA
 
 ## Release order
 
-1. Complete automatic interruption recovery and governed partial quarantine (03R). **Next; not started.**
+1. Complete automatic interruption recovery and governed partial quarantine (03R). **Next. Design written in `docs/proposals/LD_STORAGE_03R2_INTERRUPTION_RECOVERY_v1.md`; implementation waits for a green Windows verifier run.**
 2. Complete the destination/filesystem matrix (03T). Local-host portion implemented; named removable, network, optical, and encrypted destinations remain open.
 3. Reconcile current-branch image, extraction, packet, and owned-media lanes. Raw and optical acquisition now have a fail-closed self-test; named-device conformance is still required.
 4. Run named-device conformance from legacy USB/optical media through SATA/NVMe.
