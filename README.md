@@ -1,6 +1,13 @@
-# Legacy Doctor
+# Legacy Doctor — Drive Doctor
 
-Legacy Doctor is a receipt-backed, non-destructive storage recovery and backup-preflight instrument for Windows.
+Legacy Doctor is a standalone-first, receipt-backed storage diagnosis and preservation instrument for legacy units through modern SATA/NVMe media.
+
+The authoritative product documents are:
+
+- [Product specification](docs/SPECIFICATION.md)
+- [Master WBS](docs/WBS/LEGACY_DOCTOR_MASTER_WBS_v1.md)
+- [Definition of Done](docs/DOD/LEGACY_DOCTOR_DEFINITION_OF_DONE_v1.md)
+- [Operator usage](docs/USAGE/LEGACY_DOCTOR_USAGE_v1.md)
 
 The supported Storage-03 scope inventories visible storage, classifies backup candidates, evaluates destinations, builds bounded dry-run manifests, and blocks copy execution until its safety contract is satisfied.
 
@@ -22,7 +29,7 @@ Historical FAT32 formatting code remains in the repository for review history bu
 - Bounded dry-run enumeration and manifest construction
 - Manifest verification, execution preflight, run contract, and executor guard
 
-A bounded mounted-file backup executor is available for explicit source and destination directories. It defaults to dry-run, requires `-Execute` to write, refuses path overlap and existing destination files, blocks truncated catalogs, copies through temporary files, verifies SHA-256 before and after finalization, and never writes source files.
+A verified mounted-media fixture backup path is available for explicit source and destination directories. Storage-03P now proves the self-owned bounded mounted-file executor against a controlled fixture, 03Q independently re-verifies its completed receipt, 03R proves durable-prefix restart/idempotency, and 03S seals/verifies a portable workspace; automatic interruption recovery and broad real-device conformance remain open.
 
 ## Legacy-media compatibility
 
@@ -48,8 +55,6 @@ Runtime receipts are written below `proofs/`. They are local evidence outputs an
 
 ## Status
 
-Storage-03 is implemented through the blocked copy executor guard (`03N`). Unavailable-state propagation, closed top-level receipt schemas, negative safety tests, and unified local verification are in place. Clean-clone CI and independently validated, hash-chained receipts remain release-qualification work.
+Storage-03 is proven through the negative dry-run harness (`03O`), isolated positive ready-path fixture (`03P0`), controlled bounded-copy executor proof (`03P`), independent post-copy verifier (`03Q`), durable-prefix restart/idempotency proof (`03R` boundary), and backup-set seal/portable verification (`03S`). Unavailable-state propagation, closed top-level receipt schemas, negative safety tests, scheduler/registry state, and unified local verification are in place. Automatic interruption recovery, named-device destination matrix (03T runs locally only), broad device conformance, and release packaging remain open.
 
-The proposed service identity and ownership boundary are documented under `docs/proposals` pending ecosystem approval.
-
-The checked-in governance baseline intentionally remains `unclassified` until that proposal is approved and the ecosystem service map, registry, canonical integration document, and project contract are updated together.
+The service identity and ownership boundary were approved on 2026-10-05 as layer `workflow.storage-recovery` (see `docs/proposals/LEGACY_DOCTOR_SERVICE_IDENTITY_v1.md`, `docs/canonical/ECOSYSTEM_INTEGRATION.md`, and `project.contract.json`).
