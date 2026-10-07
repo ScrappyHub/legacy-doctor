@@ -1,18 +1,20 @@
 # Agent Instructions — legacy-doctor
 
 <!-- ATLAS_SERVICE_MAP_BEGIN -->
-## Atlas Systems ecosystem context
+## Constellation ecosystem context
 
-This repository is the `legacy-doctor` service inside the Atlas Systems deterministic software ecosystem.
+This repository is the `legacy-doctor` service inside the Constellation deterministic software ecosystem.
 
-**Canonical role:** Receipt-backed, non-destructive storage recovery and backup instrument that inventories visible devices, classifies readable backup candidates, evaluates destinations, builds and verifies bounded manifests, and blocks unsafe execution until every copy condition is explicitly proven. Layer: `workflow.storage-recovery`.
+**Canonical role:** Receipt-backed, non-destructive storage recovery and backup instrument that inventories visible devices, classifies readable backup candidates, evaluates destinations, builds and verifies bounded manifests, and blocks unsafe execution until every copy condition is explicitly proven.
+
+**Ecosystem authority:** Constellation (`constellation`). The registry, service map, agent policy and shared invariants below are published by Constellation.
 
 Before auditing, planning, refactoring, or editing this repository, read:
 
-1. `C:\dev\_ecosystem\SERVICE_MAP.md`
-2. `C:\dev\_ecosystem\service.registry.json`
-3. `C:\dev\_ecosystem\AGENT_POLICY.md`
-4. `C:\dev\_ecosystem\SHARED_INVARIANTS.md`
+1. `C:\dev\Constellation\ecosystem\SERVICE_MAP.md`
+2. `C:\dev\Constellation\registry\services.json`
+3. `C:\dev\Constellation\ecosystem\AGENT_POLICY.md`
+4. `C:\dev\Constellation\ecosystem\SHARED_INVARIANTS.md`
 5. `docs\canonical\ECOSYSTEM_INTEGRATION.md`
 6. `docs\canonical\IDENTITY.md` when present
 7. `docs\canonical\SPEC.md` when present
