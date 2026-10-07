@@ -279,7 +279,7 @@ function Invoke-RealWrite([string]$TestDir,[Int64]$Planned,[int]$Chunk,[int]$Fil
     } finally {
       $fs.Dispose()
     }
-    if(($fileCount % 8) -eq 0){ Write-Host ("progress: wrote_blocks=" + $result.written + "/" + $Planned) }
+    Write-Host ("progress: wrote_blocks=" + $result.written + "/" + $Planned)
   }
   return $result
 }
@@ -291,6 +291,7 @@ function Invoke-RealRead([System.Collections.Generic.List[string]]$Created,[Int6
   $fileIndex = 0
   foreach($path in $Created){
     $fileIndex++
+    Write-Host ("progress: reading_file=" + $fileIndex + "/" + $Created.Count)
     $startBlock = [Int64](($fileIndex - 1) * $FileBlocks)
     $count = [Int64]($Written - $startBlock)
     if($count -gt $FileBlocks){ $count = [Int64]$FileBlocks }

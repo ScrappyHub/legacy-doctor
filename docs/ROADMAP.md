@@ -15,7 +15,7 @@ The roadmap is governed by [LEGACY_DOCTOR_MASTER_WBS_v1.md](WBS/LEGACY_DOCTOR_MA
 | Storage-03R resume/idempotency | durable-prefix restart proven; 03R2 stale-partial recovery lane proven on synthetic prefix partials (verifier 36/36 on 2026-10-07); killed-process proof run and passed 2026-10-07 (local NTFS destination, 300 MB fixture, one run); intent journal and named-device evidence open |
 | Storage-03S backup-set seal | proven controlled workspace; signing/encryption remain open |
 | Storage-03T destination matrix | local-host matrix and refusal/unavailable states proven (verifier 36/36 on 2026-10-07); named-device and network matrix open |
-| Capacity-integrity test (free space only) | lane and selftest proven against a simulated fake-capacity device and a real NTFS target (verifier 37/37 on 2026-10-07); no real device run yet; cannot detect fakes on occupied space |
+| Capacity-integrity test (free space only) | lane and selftest proven against a simulated fake-capacity device and a real NTFS target (verifier 37/37 on 2026-10-07); first real-device run: iPod Shuffle 2G, 934 MiB of free space verified with 0 bad blocks (`docs/evidence/2026-10-07_ipod-shuffle-2g_capacity.md`); cannot detect fakes on occupied space |
 | Raw/optical real-device matrix | partial/historic; current re-audit required |
 | Filesystem-aware recovery | future |
 | Repair/wipe | deferred safety-critical reconciliation |
