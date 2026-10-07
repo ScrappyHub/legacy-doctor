@@ -20,6 +20,10 @@ powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\
 
 The self-test covers a dry run, a missing flag, quarantine with matching bytes, a byte-identical copy after recovery, a no-op replay, and eight blocking cases that leave every partial untouched.
 
+## Killed-process proof
+
+`scripts/test/proof_interruption_kill_v1.ps1` force-kills the real executor while a partial exists and runs the full block, recover, copy, and replay sequence on the result. It is timing-dependent and writes a large fixture, so it is not in the unified verifier. Procedure and expected tokens: `docs/USAGE/LEGACY_DOCTOR_HARDWARE_CONFORMANCE_RUNBOOK_v1.md`. Until it has been run and its result recorded, the real-interruption gate is open.
+
 ## What this does not prove
 
-A prefix of the source proves the partial is consistent with an interrupted copy of that file. It does not prove this tool wrote it, so the lane quarantines rather than deletes. The proof uses synthetic prefix partials, not a killed executor process. Power-loss durability, network shares, removable-media behavior, and a source that changed during a run are not covered. The intent journal in the proposal is deferred; it would let the executor record intent before writing and is not required by this lane.
+A prefix of the source proves the partial is consistent with an interrupted copy of that file. It does not prove this tool wrote it, so the lane quarantines rather than deletes. The unified-verifier proof uses synthetic prefix partials; the killed-process proof above is separate. Power-loss durability, network shares, removable-media behavior, and a source that changed during a run are not covered. The intent journal in the proposal is deferred; it would let the executor record intent before writing and is not required by this lane.

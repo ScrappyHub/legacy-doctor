@@ -8,6 +8,7 @@ The authoritative product documents are:
 - [Master WBS](docs/WBS/LEGACY_DOCTOR_MASTER_WBS_v1.md)
 - [Definition of Done](docs/DOD/LEGACY_DOCTOR_DEFINITION_OF_DONE_v1.md)
 - [Operator usage](docs/USAGE/LEGACY_DOCTOR_USAGE_v1.md)
+- [Hardware conformance runbook](docs/USAGE/LEGACY_DOCTOR_HARDWARE_CONFORMANCE_RUNBOOK_v1.md)
 
 The supported Storage-03 scope inventories visible storage, classifies backup candidates, evaluates destinations, builds bounded dry-run manifests, and blocks copy execution until its safety contract is satisfied.
 
