@@ -40,6 +40,64 @@ function Get-PrefixSha256([string]$Path,[Int64]$Length){
   }
 }
 
+if(-not ("LdBlockCompare" -as [type])){
+  Add-Type -TypeDefinition @"
+public static class LdBlockCompare {
+  public static int FirstDiff(byte[] a, byte[] b, int count){
+    for(int i = 0; i < count; i++){ if(a[i] != b[i]){ return i; } }
+    return -1;
+  }
+  public static bool AllZero(byte[] a, int start, int count){
+    for(int i = start; i < start + count; i++){ if(a[i] != 0){ return false; } }
+    return true;
+  }
+}
+"@
+}
+
+# A partial is consistent with an interrupted copy when it is an exact prefix of the source, or an exact prefix
+# followed only by zero bytes (an allocated but unwritten tail, which a real killed copy leaves behind).
+# Returns mismatch_at = -1 for an exact prefix, otherwise the number of leading bytes that match.
+function Compare-PartialToSource([string]$PartialPath,[string]$SourcePath){
+  $partialStream = [IO.File]::Open($PartialPath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  $sourceStream = [IO.File]::Open($SourcePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+    $partialBlock = New-Object byte[] 1048576
+    $sourceBlock = New-Object byte[] 1048576
+    [Int64]$offset = 0
+    [Int64]$mismatchAt = -1
+    $consistent = $true
+    while($consistent){
+      $partialRead = $partialStream.Read($partialBlock,0,$partialBlock.Length)
+      if($partialRead -le 0){ break }
+      $sourceRead = 0
+      while($sourceRead -lt $partialRead){
+        $n = $sourceStream.Read($sourceBlock,$sourceRead,$partialRead - $sourceRead)
+        if($n -le 0){ break }
+        $sourceRead += $n
+      }
+      if($mismatchAt -lt 0){
+        $compareCount = [Math]::Min($partialRead,$sourceRead)
+        $diff = [LdBlockCompare]::FirstDiff($partialBlock,$sourceBlock,$compareCount)
+        if($diff -ge 0){
+          $mismatchAt = $offset + $diff
+          $consistent = [LdBlockCompare]::AllZero($partialBlock,$diff,$partialRead - $diff)
+        } elseif($sourceRead -lt $partialRead){
+          $mismatchAt = $offset + $sourceRead
+          $consistent = [LdBlockCompare]::AllZero($partialBlock,$sourceRead,$partialRead - $sourceRead)
+        }
+      } else {
+        $consistent = [LdBlockCompare]::AllZero($partialBlock,0,$partialRead)
+      }
+      $offset += $partialRead
+    }
+    return [pscustomobject]@{ consistent = [bool]$consistent; mismatch_at = [Int64]$mismatchAt }
+  } finally {
+    $partialStream.Dispose()
+    $sourceStream.Dispose()
+  }
+}
+
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 . (Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1")
 . (Join-Path $PSScriptRoot "_lib_ld_destination_profile_v1.ps1")
@@ -80,6 +138,7 @@ foreach($partial in $partials){
   $partialBytes = [Int64]$partial.Length
   $sourceBytes = [Int64]0
   $partialSha = ""
+  $copiedPrefix = [Int64]0
   $classification = "blocked"
   $reason = ""
 
@@ -94,9 +153,12 @@ foreach($partial in $partials){
     } else {
       try {
         $partialSha = Get-PrefixSha256 $partial.FullName $partialBytes
-        $prefixSha = Get-PrefixSha256 $sourcePath $partialBytes
-        if($partialSha -ceq $prefixSha){ $classification = "recoverable"; $reason = "EXACT_PREFIX_OF_SOURCE" }
-        else { $reason = "PARTIAL_NOT_SOURCE_PREFIX" }
+        $comparison = Compare-PartialToSource $partial.FullName $sourcePath
+        if($comparison.consistent){
+          $classification = "recoverable"
+          if($comparison.mismatch_at -lt 0){ $reason = "EXACT_PREFIX_OF_SOURCE"; $copiedPrefix = $partialBytes }
+          else { $reason = "PREFIX_WITH_ZERO_FILLED_TAIL"; $copiedPrefix = [Int64]$comparison.mismatch_at }
+        } else { $reason = "PARTIAL_NOT_SOURCE_PREFIX" }
       } catch {
         $reason = "PARTIAL_OR_SOURCE_UNREADABLE"
       }
@@ -108,6 +170,7 @@ foreach($partial in $partials){
     classification = $classification
     reason = $reason
     partial_bytes = $partialBytes
+    copied_prefix_bytes = $copiedPrefix
     source_bytes = $sourceBytes
     partial_sha256 = $partialSha
     quarantine_path = ""

@@ -24,7 +24,7 @@ Must print `LEGACY_DOCTOR_PROJECT_VERIFICATION_OK` before any hardware run.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test\proof_interruption_kill_v1.ps1 -RepoRoot .
 ```
 
-Expected final line `LD_STORAGE03_INTERRUPTION_KILL_PROOF_OK`. It writes a 300 MB fixture under `proofs\selftest`, force-kills the executor while a `.legacy-doctor.partial` exists, and then proves block, recover, copy, and replay. `INCONCLUSIVE_COULD_NOT_KILL_MID_COPY` means the copy finished too quickly; rerun with `-FileMegabytes 1000`. `REAL_PARTIAL_NOT_RECOVERABLE` is a real finding (for example a preallocated, zero-filled tail) and must be reported, not worked around.
+Expected final line `LD_STORAGE03_INTERRUPTION_KILL_PROOF_OK`. It writes a 300 MB fixture under `proofs\selftest`, force-kills the executor while a `.legacy-doctor.partial` exists, and then proves block, recover, copy, and replay. `INCONCLUSIVE_COULD_NOT_KILL_MID_COPY` means the copy finished too quickly; rerun with `-FileMegabytes 1000`. `REAL_PARTIAL_NOT_RECOVERABLE` is a real finding and must be reported, not worked around. (The first run hit this because a killed copy leaves a full-size partial with a zero-filled tail; the lane now classifies that as `PREFIX_WITH_ZERO_FILLED_TAIL`.)
 
 ## 2. Destination matrix, named destinations (03T)
 

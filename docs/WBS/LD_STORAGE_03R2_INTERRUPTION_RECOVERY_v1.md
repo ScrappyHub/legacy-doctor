@@ -4,7 +4,7 @@
 
 `scripts/storage/ld_storage03_interruption_recovery_v1.ps1` classifies each `*.legacy-doctor.partial` file under a destination root against the source root, and, only with `-RecoverStalePartials -Execute`, moves recoverable partials into `<destination>/quarantine/stale-partials/<run id>/` by rename. It never deletes, rewrites, or reuses a partial, and it does not copy. After recovery the normal bounded executor (`ld_mounted_media_backup_v1.ps1`) completes the copy from the source.
 
-A partial is **recoverable** only when all of these hold: the final file does not exist, the source file exists, the partial is not larger than the source, and the SHA-256 of the partial equals the SHA-256 of the same number of leading bytes of the current source file. Anything else (`FINAL_FILE_PRESENT`, `SOURCE_FILE_MISSING`, `PARTIAL_LARGER_THAN_SOURCE`, `PARTIAL_NOT_SOURCE_PREFIX`, `PARTIAL_OR_SOURCE_UNREADABLE`) is blocked. If any partial is blocked, nothing is moved.
+A partial is **recoverable** only when all of these hold: the final file does not exist, the source file exists, the partial is not larger than the source, and the partial is either an exact byte prefix of the current source file (`EXACT_PREFIX_OF_SOURCE`) or an exact prefix followed only by zero bytes (`PREFIX_WITH_ZERO_FILLED_TAIL`). The second form is what a real killed copy leaves on NTFS: the first killed-process run (2026-10-07) found a partial already at the full 314,572,800-byte source size whose unwritten tail was zeros, which the original exact-prefix rule correctly refused. The receipt records `copied_prefix_bytes`. A nonzero byte anywhere after the first mismatch blocks. Anything else (`FINAL_FILE_PRESENT`, `SOURCE_FILE_MISSING`, `PARTIAL_LARGER_THAN_SOURCE`, `PARTIAL_NOT_SOURCE_PREFIX`, `PARTIAL_OR_SOURCE_UNREADABLE`) is blocked. If any partial is blocked, nothing is moved.
 
 Also blocked before enumeration: missing source or destination, source/destination overlap, a destination that is or contains the repository (except under `proofs\selftest`), and `-Execute` without `-RecoverStalePartials`. `-RecoverStalePartials` without `-Execute` is a dry run that reports the plan.
 
@@ -18,7 +18,7 @@ Receipt: `ld.device.storage03_interruption_recovery.receipt.v1` (closed schema),
 powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\_RUN_legacy_doctor_storage03_interruption_recovery_v1.ps1 -RepoRoot C:\dev\legacy-doctor
 ```
 
-The self-test covers a dry run, a missing flag, quarantine with matching bytes, a byte-identical copy after recovery, a no-op replay, and eight blocking cases that leave every partial untouched.
+The self-test covers a zero-filled tail, a nonzero tail, a dry run, a missing flag, quarantine with matching bytes, a byte-identical copy after recovery, a no-op replay, and eight blocking cases that leave every partial untouched.
 
 ## Killed-process proof
 

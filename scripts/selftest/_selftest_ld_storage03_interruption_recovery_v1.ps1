@@ -134,6 +134,33 @@ Assert-Blocked "MIXED" "PARTIAL_NOT_SOURCE_PREFIX" (Run-Recovery $dest $true $tr
 Assert-Unchanged $good "one-song" "MIXED_GOOD"
 Assert-Unchanged $bad "not-the-rom" "MIXED_BAD"
 
+# A real killed copy leaves an allocated, zero-filled tail. Exact prefix followed only by zeros is recoverable.
+$dest = New-Destination "zero-tail"
+$zeroTailPath = Join-Path $dest ("music\one.m4a" + $suffix)
+EnsureDir (Split-Path -Parent $zeroTailPath)
+$zeroTailBytes = New-Object byte[] 14
+[Array]::Copy([Text.Encoding]::UTF8.GetBytes("one-song-b"),$zeroTailBytes,10)
+[IO.File]::WriteAllBytes($zeroTailPath,$zeroTailBytes)
+$zeroPlan = Run-Recovery $dest $true $false
+Require ([bool]$zeroPlan.ok) "ZERO_TAIL_PLAN_NOT_OK" (@($zeroPlan.blockers) -join ",")
+Require (([string]$zeroPlan.rows[0].reason) -eq "PREFIX_WITH_ZERO_FILLED_TAIL") "ZERO_TAIL_REASON_BAD" ([string]$zeroPlan.rows[0].reason)
+Require ([int64]$zeroPlan.rows[0].copied_prefix_bytes -eq 10) "ZERO_TAIL_PREFIX_BAD" ([string]$zeroPlan.rows[0].copied_prefix_bytes)
+$zeroRun = Run-Recovery $dest $true $true
+Require ([bool]$zeroRun.ok -and [int]$zeroRun.quarantined_count -eq 1) "ZERO_TAIL_NOT_QUARANTINED" (@($zeroRun.blockers) -join ",")
+Require (-not (Test-Path -LiteralPath $zeroTailPath)) "ZERO_TAIL_LEFT_AT_ORIGIN" ""
+
+# A nonzero tail after the matching prefix is not an interrupted copy and must block.
+$dest = New-Destination "nonzero-tail"
+$nonzeroPath = Join-Path $dest ("music\one.m4a" + $suffix)
+EnsureDir (Split-Path -Parent $nonzeroPath)
+$nonzeroBytes = New-Object byte[] 14
+[Array]::Copy([Text.Encoding]::UTF8.GetBytes("one-song-b"),$nonzeroBytes,10)
+$nonzeroBytes[12] = 7
+[IO.File]::WriteAllBytes($nonzeroPath,$nonzeroBytes)
+$nonzeroRun = Run-Recovery $dest $true $true
+Assert-Blocked "NONZERO_TAIL" "PARTIAL_NOT_SOURCE_PREFIX" $nonzeroRun
+Require (Test-Path -LiteralPath $nonzeroPath -PathType Leaf) "NONZERO_TAIL_MOVED" ""
+
 # Destination overlapping the source or the repository is refused before any enumeration.
 $overlap = Run-Recovery $source $true $true
 Require (-not [bool]$overlap.ok) "OVERLAP_NOT_BLOCKED" ""
@@ -151,5 +178,6 @@ Require $sourceUnchanged "SOURCE_CHANGED" ""
 
 Write-Output "PASS: exact-prefix partial is recoverable; dry run and missing flag change nothing"
 Write-Output "PASS: recovery quarantines with matching hash, normal executor completes byte-identical copy, replay is a no-op"
+Write-Output "PASS: prefix plus zero-filled tail (a real killed copy) is recoverable; nonzero tail blocks"
 Write-Output "PASS: non-prefix, oversized, final-present, source-missing, mixed, overlap, repo-root, and missing-destination cases block without changes"
 Write-Output "SELFTEST_LD_STORAGE03_INTERRUPTION_RECOVERY_OK"
