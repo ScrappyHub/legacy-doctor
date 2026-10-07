@@ -10,7 +10,7 @@ The roadmap is governed by [LEGACY_DOCTOR_MASTER_WBS_v1.md](WBS/LEGACY_DOCTOR_MA
 | Storage-03A–03N observation and safety gates | proven |
 | Storage-03O negative bounded-copy dry-run harness | proven |
 | Storage-03P0 positive ready-path fixture | proven isolated fixture |
-| Storage-03P bounded mounted-file copy | proven controlled fixture; real-device conformance open |
+| Storage-03P bounded mounted-file copy | proven controlled fixture; first named-device run: iPod Shuffle 2G, one verified backup of an empty-ish device (`docs/evidence/2026-10-07_ipod-shuffle-2g.md`); broader real-device conformance open |
 | Storage-03Q post-copy verifier | proven controlled fixture; real-device conformance open |
 | Storage-03R resume/idempotency | durable-prefix restart proven; 03R2 stale-partial recovery lane proven on synthetic prefix partials (verifier 36/36 on 2026-10-07); killed-process proof run and passed 2026-10-07 (local NTFS destination, 300 MB fixture, one run); intent journal and named-device evidence open |
 | Storage-03S backup-set seal | proven controlled workspace; signing/encryption remain open |

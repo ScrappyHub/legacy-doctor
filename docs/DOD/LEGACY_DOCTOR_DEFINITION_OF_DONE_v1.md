@@ -30,3 +30,5 @@ Legacy Doctor is not release-complete when a script exists or a synthetic happy 
 ## Current status
 
 The repository currently has Storage-03A–03S, 03R2 (synthetic partials plus one killed-process run on local NTFS, 2026-10-07) and local-host 03T proof for controlled mounted-file/workspace fixtures and is **not** release-complete. Interruption recovery on named devices and other filesystems, named-device 03T evidence, real-device conformance, and later execution/recovery/release gates remain open.
+
+Named-device evidence so far: iPod Shuffle 2G mounted-media backup, one verified run, scoped in `docs/evidence/2026-10-07_ipod-shuffle-2g.md`. This does not satisfy the named legacy-device, optical, or SATA/NVMe gates beyond that scope.
