@@ -18,13 +18,19 @@ Read-only first: filesystem dirty flag, SMART where the bus exposes it (SATA/NVM
 ## 4. Floppy and failing media
 Read with bounded retries and a sector map, image first, work from the image. Never write back to a source medium. Corrupted reads are recorded as such, never silently replaced.
 
-## 5. Imaging, Macrium path and rollback
-Existing lanes already acquire raw and optical images and restore image files. Proposed additions:
-- Detect an installed Macrium Reflect and record its version; support verifying and listing a backup it produced by calling its own tooling. Legacy Doctor does not parse or write the proprietary image format itself. Whether "Macrium path" means this integration or something else needs the owner's confirmation.
-- Rollback: every write-capable lane keeps a pre-change manifest and a restore plan; a rollback is its own receipt-backed lane with verification.
+## 5. Owned imaging and rollback
+Owner decision (2026-10-07): fully owned. Legacy Doctor implements imaging itself and does not depend on Macrium Reflect or any other imaging product.
+- Image format: an open, documented Legacy Doctor image container (versioned header, chunked data, per-chunk SHA-256, whole-image hash chain, source device identity, bad-sector map). Built on the existing raw and optical acquire and verified-image lanes. Documented in `docs/` so the images stay readable without Legacy Doctor.
+- Verify, list, mount-read-only and restore lanes for that format, each with a plan receipt and execute flag.
+- Reading images made by other products (for example Macrium) is a separate, later decision; it is not part of the owned core.
+- Rollback: every write-capable lane keeps a pre-change manifest and a restore plan; rollback is its own receipt-backed lane with verification.
 
-## 6. 7-Zip integration
-Use an installed 7-Zip (`7z.exe`) as an external tool: detect path and version, never bundle or modify it, run with explicit arguments, and hash inputs and outputs. Archive and extract only into new destination folders; extraction verifies listed sizes and hashes; refuse path traversal entries. Receipt: `ld.archive.operation.receipt.v1`.
+## 6. Owned archive container and extraction
+Owner decision (2026-10-07): fully owned. No dependency on 7-Zip.
+- Container v1: a Legacy Doctor archive built on the .NET compression already present in Windows PowerShell 5.1 (Deflate), with a manifest of paths, sizes and SHA-256 hashes, written to a new destination only. Refuses path traversal, absolute paths and reparse points; extraction verifies every hash.
+- Standard ZIP read and write through the same code, because it comes with the platform.
+- Formats that need their own decoders (7z/LZMA, RAR) are out of scope for v1. Adding one is a separate proposal because it is a large implementation with its own test burden.
+- Receipt: `ld.archive.operation.receipt.v1`.
 
 ## 7. Product identity (UI phase, after the above lanes)
 - Mascot: an original 8-bit doctor character, used as the app icon and system-tray symbol. It is new artwork, not a copy of an existing character.
@@ -32,14 +38,14 @@ Use an installed 7-Zip (`7z.exe`) as an external tool: detect path and version, 
 - Tray menu: attached devices, last backup, last health result, start a safe scan.
 The UI reads receipts and calls existing lanes; it contains no copy, write or format logic of its own.
 
+## Owner decisions recorded (2026-10-07)
+- Imaging and archive features are fully owned, with no external tool dependency.
+- Capacity test is free-space only; it cannot detect a fake on a full drive, and the receipt must say so.
+
 ## Order of work
 1. Health check and capacity-test lanes with selftests (read-only first).
 2. Benchmark lane.
-3. 7-Zip wrapper with selftests on synthetic archives.
-4. Macrium detection and verification (after the meaning is confirmed).
+3. Owned archive container with selftests on synthetic data.
+4. Owned image container, verify and restore lanes.
 5. Library layer (separate proposal).
 6. UI, mascot and tray.
-
-## Open questions for the owner
-- Confirm what "Macrium path capabilities" should mean (use a Macrium install, or reproduce imaging features in Legacy Doctor).
-- Approve the free-space-only rule for the capacity test, which cannot detect fakes on a full drive.
