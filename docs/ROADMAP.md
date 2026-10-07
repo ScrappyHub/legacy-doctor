@@ -12,9 +12,9 @@ The roadmap is governed by [LEGACY_DOCTOR_MASTER_WBS_v1.md](WBS/LEGACY_DOCTOR_MA
 | Storage-03P0 positive ready-path fixture | proven isolated fixture |
 | Storage-03P bounded mounted-file copy | proven controlled fixture; real-device conformance open |
 | Storage-03Q post-copy verifier | proven controlled fixture; real-device conformance open |
-| Storage-03R resume/idempotency | durable-prefix restart proven; 03R2 stale-partial recovery lane implemented (exact-prefix proof, governed quarantine), pending a green Windows verifier run; real killed-process and journal evidence open |
+| Storage-03R resume/idempotency | durable-prefix restart proven; 03R2 stale-partial recovery lane proven on synthetic prefix partials (verifier 36/36 on 2026-10-07); real killed-process and journal evidence open |
 | Storage-03S backup-set seal | proven controlled workspace; signing/encryption remain open |
-| Storage-03T destination matrix | local-host matrix and refusal/unavailable states implemented, pending a clean verifier run; named-device and network matrix open |
+| Storage-03T destination matrix | local-host matrix and refusal/unavailable states proven (verifier 36/36 on 2026-10-07); named-device and network matrix open |
 | Raw/optical real-device matrix | partial/historic; current re-audit required |
 | Filesystem-aware recovery | future |
 | Repair/wipe | deferred safety-critical reconciliation |
@@ -25,7 +25,7 @@ The roadmap is governed by [LEGACY_DOCTOR_MASTER_WBS_v1.md](WBS/LEGACY_DOCTOR_MA
 ## Release order
 
 1. Complete automatic interruption recovery and governed partial quarantine (03R). **Lane implemented (`LD_STORAGE_03R2`); remaining: killed-process proof, optional intent journal, named-device evidence.**
-2. Complete the destination/filesystem matrix (03T). Local-host portion implemented; named removable, network, optical, and encrypted destinations remain open.
+2. Complete the destination/filesystem matrix (03T). Local-host portion proven; named removable, network, optical, and encrypted destinations remain open.
 3. Reconcile current-branch image, extraction, packet, and owned-media lanes. Raw and optical acquisition now have a fail-closed self-test; named-device conformance is still required.
 4. Run named-device conformance from legacy USB/optical media through SATA/NVMe.
 5. Build the nontechnical dashboard on top of settled receipts and schemas.

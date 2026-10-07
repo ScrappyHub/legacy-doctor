@@ -41,7 +41,8 @@ Historic proof is evidence to re-audit, not automatic current release status.
 - 3Q post-copy independent verifier — **proven controlled mounted-file receipt**
 - 3R resume, interruption recovery, and idempotency — **durable-prefix restart/idempotency proven; automatic interruption recovery remains open**
 - 3S backup-set seal and portable verification — **proven controlled workspace**
-- 3T real destination/filesystem matrix — **local-host matrix and refusal/unavailable states implemented; named-device and network evidence open**
+- 3R2 stale-partial recovery and governed quarantine — **proven on synthetic prefix partials; real killed-process proof open**
+- 3T real destination/filesystem matrix — **local-host matrix and refusal/unavailable states proven; named-device and network evidence open**
 
 ## WBS 4 — Real-device conformance
 

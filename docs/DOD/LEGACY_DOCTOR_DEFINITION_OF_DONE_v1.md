@@ -29,4 +29,4 @@ Legacy Doctor is not release-complete when a script exists or a synthetic happy 
 
 ## Current status
 
-The repository currently has Storage-03A–03S proof for controlled mounted-file/workspace fixtures and is **not** release-complete. Automatic 03R interruption recovery, named-device 03T evidence, real-device conformance, and later execution/recovery/release gates remain open.
+The repository currently has Storage-03A–03S, 03R2 (synthetic partials) and local-host 03T proof for controlled mounted-file/workspace fixtures and is **not** release-complete. Automatic 03R interruption recovery, named-device 03T evidence, real-device conformance, and later execution/recovery/release gates remain open.
