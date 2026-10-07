@@ -24,6 +24,7 @@ Changed:
 - Closed schemas added for the hashed catalog and backup-set content bodies, raw-disk facts, and the quarantined FAT32 plan and verify documents.
 - New self-tests: lane conformance (every lane has coverage, every emitted receipt has a schema, destructive primitives only behind the formatter quarantine) and fail-closed raw/optical acquisition.
 - `scripts/_scratch/` is no longer tracked.
+- Killed-process proof passed on 2026-10-07 (local NTFS, 300 MB fixture, one run).
 - Killed-process proof harness for 03R2 and a hardware conformance runbook with an evidence-record template.
 - Storage-03R2 fix from the first real killed-process run: a killed copy leaves a full-size partial with a zero-filled tail, now recoverable as `PREFIX_WITH_ZERO_FILLED_TAIL`; a nonzero tail still blocks.
 - Storage-03R2: stale-partial recovery lane. Exact-prefix classification against the source, governed non-destructive quarantine, closed receipt, and positive/negative self-test.

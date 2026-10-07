@@ -22,7 +22,7 @@ The self-test covers a zero-filled tail, a nonzero tail, a dry run, a missing fl
 
 ## Killed-process proof
 
-`scripts/test/proof_interruption_kill_v1.ps1` force-kills the real executor while a partial exists and runs the full block, recover, copy, and replay sequence on the result. It is timing-dependent and writes a large fixture, so it is not in the unified verifier. Procedure and expected tokens: `docs/USAGE/LEGACY_DOCTOR_HARDWARE_CONFORMANCE_RUNBOOK_v1.md`. Until it has been run and its result recorded, the real-interruption gate is open.
+`scripts/test/proof_interruption_kill_v1.ps1` force-kills the real executor while a partial exists and runs the full block, recover, copy, and replay sequence on the result. It is timing-dependent and writes a large fixture, so it is not in the unified verifier. Procedure and expected tokens: `docs/USAGE/LEGACY_DOCTOR_HARDWARE_CONFORMANCE_RUNBOOK_v1.md`. Result: run on 2026-10-07 against a local NTFS destination with a 300 MB fixture; the executor was force-killed mid-copy (partial_bytes=314572800), the executor then blocked on the stale partial, recovery classified it recoverable, quarantine succeeded, the executor completed a byte-identical copy, and replay was a no-op (`LD_STORAGE03_INTERRUPTION_KILL_PROOF_OK`). Scope: one run, local NTFS only; the real-interruption gate is closed for that scope. Other filesystems, removable/network media, and power loss remain open.
 
 ## What this does not prove
 

@@ -39,7 +39,7 @@ Historic proof is evidence to re-audit, not automatic current release status.
 - 3P0 positive safe ready-path fixture — **proven isolated fixture**
 - 3P bounded copy executor — **proven controlled mounted-file fixture; real-device matrix remains open**
 - 3Q post-copy independent verifier — **proven controlled mounted-file receipt**
-- 3R resume, interruption recovery, and idempotency — **durable-prefix restart/idempotency proven; automatic interruption recovery remains open**
+- 3R resume, interruption recovery, and idempotency — **durable-prefix restart/idempotency proven; 03R2 stale-partial recovery proven synthetically and by one killed-process run on local NTFS (2026-10-07); intent journal and named-device evidence remain open**
 - 3S backup-set seal and portable verification — **proven controlled workspace**
 - 3R2 stale-partial recovery and governed quarantine — **proven on synthetic prefix partials; real killed-process proof open**
 - 3T real destination/filesystem matrix — **local-host matrix and refusal/unavailable states proven; named-device and network evidence open**
