@@ -59,10 +59,10 @@ Receipt-backed, non-destructive storage recovery and backup instrument that inve
 
 ## Authoritative ecosystem sources
 
-- `C:\dev\Constellation\ecosystem\SERVICE_MAP.md`
-- `C:\dev\Constellation\registry\services.json`
-- `C:\dev\Constellation\ecosystem\AGENT_POLICY.md`
-- `C:\dev\Constellation\ecosystem\SHARED_INVARIANTS.md`
+- `../Constellation/ecosystem/SERVICE_MAP.md`
+- `../Constellation/registry/services.json`
+- `../Constellation/ecosystem/AGENT_POLICY.md`
+- `../Constellation/ecosystem/SHARED_INVARIANTS.md`
 
 ## Change governance
 
