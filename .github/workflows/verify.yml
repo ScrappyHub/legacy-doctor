@@ -1,0 +1,32 @@
+name: verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storage03:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run project verification
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\test\verify_project_v1.ps1 -RepoRoot . -TimeoutSeconds 90
+          if ($LASTEXITCODE -ne 0) { throw "Project verification failed with exit code $LASTEXITCODE" }
+
+      - name: Confirm verification did not modify tracked files
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          & git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { throw "Verification modified tracked files" }

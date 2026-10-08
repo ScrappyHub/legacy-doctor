@@ -12,6 +12,10 @@ function Die([string]$Code,[string]$Detail){
   throw ($Code + ":" + $Detail)
 }
 
+$ReceiptsLib = Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1"
+if(-not (Test-Path -LiteralPath $ReceiptsLib -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $ReceiptsLib }
+. $ReceiptsLib
+
 function EnsureDir([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if(-not (Test-Path -LiteralPath $Path -PathType Container)){
@@ -27,17 +31,6 @@ function Write-Utf8NoBomLf([string]$Path,[string]$Text){
   if(-not $t.EndsWith("`n")){ $t += "`n" }
 
   [IO.File]::WriteAllText($Path,$t,[Text.UTF8Encoding]::new($false))
-}
-
-function First-JsonObjectFromOutput([object[]]$Output,[string]$Schema){
-  foreach($line in @($Output)){
-    $s = [string]$line
-    if($s.StartsWith("{") -and $s.Contains(('"schema":"' + $Schema + '"'))){
-      return ($s | ConvertFrom-Json)
-    }
-  }
-
-  Die "JSON_SCHEMA_OUTPUT_MISSING" $Schema
 }
 
 function SafeStr([object]$Value){
@@ -231,10 +224,13 @@ if($LASTEXITCODE -ne 0){
   Die "FILE_BACKUP_PLAN_EXIT_NONZERO" ([string]$LASTEXITCODE)
 }
 
-$plan = First-JsonObjectFromOutput -Output $out -Schema "ld.device.file_backup_plan.receipt.v1"
+$plan = LDREC-ReadReceiptFromOutput -Output $out -ExpectedSchema "ld.device.file_backup_plan.receipt.v1" -SchemaDirectory (Join-Path $RepoRoot "schemas")
+$inputAvailable = SafeBool $plan.ok
 
 $rows = @()
-foreach($p in @($plan.plan_rows)){
+$planRows = @()
+if($inputAvailable){ $planRows = @($plan.plan_rows) }
+foreach($p in @($planRows)){
   $rows += ,(Enumerate-Source -PlanRow $p -MaxFiles $MaxFilesPerSource -MaxDirs $MaxDirsPerSource -MaxSamples $MaxSamplesPerSource)
 }
 
@@ -255,7 +251,8 @@ foreach($r in @($rows)){
 $receipt = [ordered]@{
   schema = "ld.device.backup_dry_run_enumerator.receipt.v1"
   event_type = "ld.device.backup_dry_run_enumerator.receipt.v1"
-  ok = $true
+  ok = [bool]$inputAvailable
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
   repo_root = $RepoRoot
   mode = "backup_dry_run_enumerator"
   destructive = $false
@@ -284,4 +281,5 @@ Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_PATH: " + $outPath)
 Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_SOURCES: " + [string]$rows.Count)
 Write-Output ("DEVICE_BACKUP_DRY_RUN_ENUMERATOR_FILES: " + [string]$totalFiles)
 Write-Output $json
-Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_OK" }
+else { Write-Output "LD_DEVICE_BACKUP_DRY_RUN_ENUMERATOR_UNAVAILABLE" }

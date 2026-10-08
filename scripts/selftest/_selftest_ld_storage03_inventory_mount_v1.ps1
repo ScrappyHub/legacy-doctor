@@ -22,11 +22,26 @@ if($LASTEXITCODE -ne 0){ Die "MOUNT_EXIT_NONZERO" ([string]$LASTEXITCODE) }
 $invText = ($outInv -join "`n")
 $mountText = ($outMount -join "`n")
 
-if($invText -notmatch "LD_DEVICE_INVENTORY_OK"){ Die "INVENTORY_TOKEN_MISSING" "" }
-if($mountText -notmatch "LD_DEVICE_MOUNT_STATE_OK"){ Die "MOUNT_TOKEN_MISSING" "" }
+if($invText -notmatch "LD_DEVICE_INVENTORY_(OK|PARTIAL|UNAVAILABLE)"){ Die "INVENTORY_TOKEN_MISSING" "" }
+if($mountText -notmatch "LD_DEVICE_MOUNT_STATE_(OK|UNAVAILABLE)"){ Die "MOUNT_TOKEN_MISSING" "" }
+
+if($invText -match "LD_DEVICE_INVENTORY_UNAVAILABLE"){
+  if($invText -notmatch '"ok":false' -or $invText -notmatch '"availability":"unavailable"'){
+    Die "INVENTORY_FALSE_UNAVAILABLE" ""
+  }
+}
+if($invText -match "LD_DEVICE_INVENTORY_PARTIAL" -and ($invText -notmatch '"ok":false' -or $invText -notmatch '"availability":"partial"')){
+  Die "INVENTORY_FALSE_PARTIAL" ""
+}
+if($mountText -match "LD_DEVICE_MOUNT_STATE_UNAVAILABLE"){
+  if($mountText -notmatch '"ok":false' -or $mountText -notmatch '"availability":"unavailable"'){
+    Die "MOUNT_FALSE_UNAVAILABLE" ""
+  }
+}
 
 Write-Output $invText
 Write-Output $mountText
 Write-Output "PASS: device inventory emitted"
 Write-Output "PASS: mount state emitted"
+Write-Output "PASS: unavailable discovery is explicit"
 Write-Output "SELFTEST_LD_STORAGE03_INVENTORY_MOUNT_OK"

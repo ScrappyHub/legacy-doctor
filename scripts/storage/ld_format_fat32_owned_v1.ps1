@@ -14,6 +14,12 @@ function Die([string]$Code,[string]$Detail){
   throw ($Code + ":" + $Detail)
 }
 
+# The supported Legacy Doctor scope is non-destructive Storage-03 preflight.
+# Keep the historical implementation unavailable until a separately reviewed
+# destructive-media contract, complete initializer, and hardware safety suite
+# are approved. This gate intentionally runs before device discovery or I/O.
+Die "CAPABILITY_QUARANTINED" "FAT32 formatting is outside the supported non-destructive Storage-03 scope"
+
 function Require([bool]$Condition,[string]$Code,[string]$Detail){
   if(-not $Condition){
     Die $Code $Detail

@@ -17,6 +17,10 @@ function Die([string]$Code,[string]$Detail){
   throw ($Code + ":" + $Detail)
 }
 
+$ReceiptsLib = Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1"
+if(-not (Test-Path -LiteralPath $ReceiptsLib -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $ReceiptsLib }
+. $ReceiptsLib
+
 function EnsureDir([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if(-not (Test-Path -LiteralPath $Path -PathType Container)){
@@ -32,17 +36,6 @@ function Write-Utf8NoBomLf([string]$Path,[string]$Text){
   if(-not $t.EndsWith("`n")){ $t += "`n" }
 
   [IO.File]::WriteAllText($Path,$t,[Text.UTF8Encoding]::new($false))
-}
-
-function First-JsonObjectFromOutput([object[]]$Output,[string]$Schema){
-  foreach($line in @($Output)){
-    $s = [string]$line
-    if($s.StartsWith("{") -and $s.Contains(('"schema":"' + $Schema + '"'))){
-      return ($s | ConvertFrom-Json)
-    }
-  }
-
-  Die "JSON_SCHEMA_OUTPUT_MISSING" $Schema
 }
 
 function SafeStr([object]$Value){
@@ -103,7 +96,7 @@ if($LASTEXITCODE -ne 0){
   Die "BACKUP_RUN_CONTRACT_EXIT_NONZERO" ([string]$LASTEXITCODE)
 }
 
-$contract = First-JsonObjectFromOutput -Output $out -Schema "ld.device.backup_run_contract.receipt.v1"
+$contract = LDREC-ReadReceiptFromOutput -Output $out -ExpectedSchema "ld.device.backup_run_contract.receipt.v1" -SchemaDirectory (Join-Path $RepoRoot "schemas")
 
 $guardActions = @()
 $reasons = @()
@@ -153,7 +146,7 @@ if(@($guardActions).Count -eq 0){
   $reasons = Add-Unique $reasons "all executor guard gates passed, but this lane still performs no copy"
 }
 
-$wouldInvokeFutureExecutor = (@($guardActions).Count -eq 1 -and $guardActions[0] -eq "EXECUTOR_GUARD_WOULD_ALLOW_FUTURE_COPY_EXECUTOR")
+$wouldInvokeFutureExecutor = (@($guardActions | Where-Object { [string]$_ -ceq "EXECUTOR_GUARD_WOULD_ALLOW_FUTURE_COPY_EXECUTOR" }).Count -eq 1 -and @($guardActions).Count -eq 1)
 
 $actionCounts = [ordered]@{}
 foreach($a in @($guardActions)){

@@ -38,8 +38,43 @@ function Str([object]$Value){
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
 $disks = @()
+$vols = @()
+$availability = "available"
+$errorCode = ""
+$errorMessage = ""
 
-foreach($disk in @(Get-Disk | Sort-Object Number)){
+$diskSource = @()
+try {
+  $diskSource = @(Get-Disk -ErrorAction Stop | Sort-Object Number)
+} catch {
+  $availability = "unavailable"
+  $errorCode = "STORAGE_DISCOVERY_UNAVAILABLE"
+  $errorMessage = $_.Exception.Message
+}
+
+if($availability -eq "available"){
+  try {
+    $vols = @(Get-Volume -ErrorAction Stop | Sort-Object DriveLetter | ForEach-Object {
+      [ordered]@{
+        drive_letter = [string]$_.DriveLetter
+        path = [string]$_.Path
+        file_system = [string]$_.FileSystem
+        label = [string]$_.FileSystemLabel
+        drive_type = [string]$_.DriveType
+        health_status = [string]$_.HealthStatus
+        operational_status = [string]$_.OperationalStatus
+        size_bytes = $(if($null -ne $_.Size){ [UInt64]$_.Size } else { [UInt64]0 })
+        size_remaining_bytes = $(if($null -ne $_.SizeRemaining){ [UInt64]$_.SizeRemaining } else { [UInt64]0 })
+      }
+    })
+  } catch {
+    $availability = "partial"
+    $errorCode = "VOLUME_DISCOVERY_UNAVAILABLE"
+    $errorMessage = $_.Exception.Message
+  }
+}
+
+foreach($disk in @($diskSource)){
   $dn = [int]$disk.Number
 
   $parts = @()
@@ -64,21 +99,6 @@ foreach($disk in @(Get-Disk | Sort-Object Number)){
     })
   }
 
-  $vols = @()
-  foreach($v in @(Get-Volume -ErrorAction SilentlyContinue | Sort-Object DriveLetter)){
-    $vols += ,([ordered]@{
-      drive_letter = [string]$v.DriveLetter
-      path = [string]$v.Path
-      file_system = [string]$v.FileSystem
-      label = [string]$v.FileSystemLabel
-      drive_type = [string]$v.DriveType
-      health_status = [string]$v.HealthStatus
-      operational_status = [string]$v.OperationalStatus
-      size_bytes = $(if($null -ne $v.Size){ [UInt64]$v.Size } else { [UInt64]0 })
-      size_remaining_bytes = $(if($null -ne $v.SizeRemaining){ [UInt64]$v.SizeRemaining } else { [UInt64]0 })
-    })
-  }
-
   $disks += ,([ordered]@{
     disk_number = $dn
     friendly_name = Str $disk.FriendlyName
@@ -100,7 +120,10 @@ foreach($disk in @(Get-Disk | Sort-Object Number)){
 $receipt = [ordered]@{
   schema = "ld.device.inventory.receipt.v1"
   event_type = "ld.device.inventory.receipt.v1"
-  ok = $true
+  ok = ($availability -eq "available")
+  availability = $availability
+  error_code = $errorCode
+  error = $errorMessage
   repo_root = $RepoRoot
   disk_count = [int]$disks.Count
   disks = @($disks)
@@ -120,4 +143,6 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_INVENTORY_PATH: " + $outPath)
 Write-Output ("DEVICE_INVENTORY_COUNT: " + [string]$disks.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_INVENTORY_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_INVENTORY_OK" }
+elseif($receipt.availability -eq "partial"){ Write-Output "LD_DEVICE_INVENTORY_PARTIAL" }
+else { Write-Output "LD_DEVICE_INVENTORY_UNAVAILABLE" }

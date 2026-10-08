@@ -34,14 +34,18 @@ if($text -notmatch '"writes_destination":false'){
 }
 
 if($text -notmatch '"write_probe_ok":true'){
-  Die "WRITE_PROBE_OK_MISSING" ""
+  if($text -notmatch 'BLOCKED_DESTINATION_WRITE_PROBE_FAILED' -or $text -notmatch '"preflight_ready":false'){
+    Die "WRITE_PROBE_FAILURE_NOT_BLOCKED" ""
+  }
 }
 
 if($text -notmatch '"manifest_invalid_row_count":0'){
-  Die "MANIFEST_INVALID_ROWS_PRESENT" ""
+  if($text -notmatch 'BLOCKED_MANIFEST_INVALID' -or $text -notmatch '"preflight_ready":false'){
+    Die "MANIFEST_INVALID_ROWS_NOT_BLOCKED" ""
+  }
 }
 
-if($text -notmatch 'READY_FOR_BOUNDED_COPY|BLOCKED_INSUFFICIENT_SPACE|BLOCKED_SOURCE_EQUALS_DESTINATION|BLOCKED_DESTINATION_WRITE_PROBE_FAILED|BLOCKED_MANIFEST_INVALID'){
+if($text -notmatch 'READY_FOR_BOUNDED_COPY|BLOCKED_INSUFFICIENT_SPACE|BLOCKED_SOURCE_EQUALS_DESTINATION|BLOCKED_DESTINATION_WRITE_PROBE_FAILED|BLOCKED_MANIFEST_INVALID|BLOCKED_SOURCE_DISCOVERY_UNAVAILABLE|BLOCKED_EMPTY_MANIFEST'){
   Die "PREFLIGHT_DECISION_MISSING" ""
 }
 

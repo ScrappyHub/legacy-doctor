@@ -1,0 +1,22 @@
+{
+    "project_id": "legacy-doctor",
+    "canonical_name": "legacy-doctor",
+    "ecosystem": {
+        "registry_schema": "constellation.service.registry.v1",
+        "service_id": "legacy-doctor",
+        "layer": "workflow.storage-recovery",
+        "role": "Receipt-backed, non-destructive storage recovery and backup instrument that inventories visible devices, classifies readable backup candidates, evaluates destinations, builds and verifies bounded manifests, and blocks unsafe execution until every copy condition is explicitly proven.",
+        "standalone_first": true,
+        "upstream_services": [
+            "archive-recall"
+        ],
+        "downstream_users": [],
+        "contract_families": [
+            "receipt",
+            "manifest"
+        ],
+        "service_map_path": "../Constellation/ecosystem/SERVICE_MAP.md",
+        "registry_path": "../Constellation/registry/services.json",
+        "integration_doc_path": "docs/canonical/ECOSYSTEM_INTEGRATION.md"
+    }
+}

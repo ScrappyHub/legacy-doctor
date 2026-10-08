@@ -17,15 +17,19 @@ if($LASTEXITCODE -ne 0){ Die "HEALTH_PROBE_EXIT_NONZERO" ([string]$LASTEXITCODE)
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_HEALTH_PROBE_OK"){
+if($text -notmatch "LD_DEVICE_HEALTH_PROBE_(OK|UNAVAILABLE)"){
   Die "HEALTH_PROBE_TOKEN_MISSING" ""
 }
 
-if($text -notmatch "smart_claim"){
+if($text -match "LD_DEVICE_HEALTH_PROBE_OK" -and $text -notmatch "smart_claim"){
   Die "SMART_CLAIM_FIELD_MISSING" ""
+}
+if($text -match "LD_DEVICE_HEALTH_PROBE_UNAVAILABLE" -and ($text -notmatch '"ok":false' -or $text -notmatch '"availability":"unavailable"')){
+  Die "HEALTH_FALSE_UNAVAILABLE" ""
 }
 
 Write-Output $text
 Write-Output "PASS: health probe emitted"
 Write-Output "PASS: SMART not overclaimed"
+Write-Output "PASS: unavailable discovery is explicit"
 Write-Output "SELFTEST_LD_STORAGE03_HEALTH_PROBE_OK"

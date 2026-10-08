@@ -17,7 +17,7 @@ if($LASTEXITCODE -ne 0){ Die "DESTINATION_SELECTOR_EXIT_NONZERO" ([string]$LASTE
 
 $text = ($out -join "`n")
 
-if($text -notmatch "LD_DEVICE_DESTINATION_SELECTOR_OK"){
+if($text -notmatch "LD_DEVICE_DESTINATION_SELECTOR_(OK|BLOCKED)"){
   Die "DESTINATION_SELECTOR_TOKEN_MISSING" ""
 }
 
@@ -29,11 +29,12 @@ if($text -notmatch '"performs_copy":false'){
   Die "PERFORMS_COPY_FALSE_MISSING" ""
 }
 
-if($text -notmatch 'SOURCE_EQUALS_DESTINATION|INSUFFICIENT_SPACE|READY_DESTINATION|DESTINATION_REVIEW'){
+if($text -notmatch 'SOURCE_EQUALS_DESTINATION|INSUFFICIENT_SPACE|READY_DESTINATION|DESTINATION_REVIEW|SOURCE_DISCOVERY_UNAVAILABLE|NO_PLANNED_SOURCES'){
   Die "DESTINATION_DECISION_MISSING" ""
 }
 
 Write-Output $text
 Write-Output "PASS: destination selector emitted"
 Write-Output "PASS: dry-run only, no copy"
+Write-Output "PASS: missing sources cannot produce a ready destination"
 Write-Output "SELFTEST_LD_STORAGE03_DESTINATION_SELECTOR_OK"

@@ -7,6 +7,10 @@ $ErrorActionPreference = "Stop"
 
 function Die([string]$Code,[string]$Detail){ throw ($Code + ":" + $Detail) }
 
+$ReceiptsLib = Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1"
+if(-not (Test-Path -LiteralPath $ReceiptsLib -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $ReceiptsLib }
+. $ReceiptsLib
+
 function EnsureDir([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if(-not (Test-Path -LiteralPath $Path -PathType Container)){
@@ -26,25 +30,6 @@ function Is-Admin(){
   $id = [Security.Principal.WindowsIdentity]::GetCurrent()
   $p = New-Object Security.Principal.WindowsPrincipal($id)
   return $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
-function First-JsonObjectFromOutput([object[]]$Output,[string]$Schema){
-  foreach($line in @($Output)){
-    $s = [string]$line
-    if($s.StartsWith("{") -and $s.Contains(('"schema":"' + $Schema + '"'))){
-      return ($s | ConvertFrom-Json)
-    }
-  }
-  Die "JSON_SCHEMA_OUTPUT_MISSING" $Schema
-}
-
-function Run-ReceiptScript([string]$ScriptPath,[string]$Schema){
-  if(-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)){ Die "SCRIPT_MISSING" $ScriptPath }
-
-  $out = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $ScriptPath -RepoRoot $RepoRoot
-  if($LASTEXITCODE -ne 0){ Die "SCRIPT_EXIT_NONZERO" ($ScriptPath + ":" + [string]$LASTEXITCODE) }
-
-  return (First-JsonObjectFromOutput -Output $out -Schema $Schema)
 }
 
 function NormalizeDriveLetter([object]$Value){
@@ -92,15 +77,26 @@ function Add-Unique([object[]]$Items,[string]$Value){
 
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
-$inventory = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_device_inventory_v1.ps1") -Schema "ld.device.inventory.receipt.v1"
-$mount = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_mount_state_v1.ps1") -Schema "ld.device.mount_state.receipt.v1"
-$health = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_health_probe_v1.ps1") -Schema "ld.device.health_probe.receipt.v1"
-$read = Run-ReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_read_probe_v1.ps1") -Schema "ld.device.read_probe.receipt.v1"
+$inventory = LDREC-RunReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_device_inventory_v1.ps1") -RepoRoot $RepoRoot -ExpectedSchema "ld.device.inventory.receipt.v1"
+$mount = LDREC-RunReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_mount_state_v1.ps1") -RepoRoot $RepoRoot -ExpectedSchema "ld.device.mount_state.receipt.v1"
+$health = LDREC-RunReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_health_probe_v1.ps1") -RepoRoot $RepoRoot -ExpectedSchema "ld.device.health_probe.receipt.v1"
+$read = LDREC-RunReceiptScript -ScriptPath (Join-Path $RepoRoot "scripts\storage\ld_read_probe_v1.ps1") -RepoRoot $RepoRoot -ExpectedSchema "ld.device.read_probe.receipt.v1"
 
 $admin = Is-Admin
+$inputsAvailable = ((SafeBool $inventory.ok) -and (SafeBool $mount.ok) -and (SafeBool $health.ok) -and (SafeBool $read.ok))
+$inputErrors = @()
+foreach($input in @($inventory,$mount,$health,$read)){
+  if(-not (SafeBool $input.ok)){
+    $code = SafeStr $input.error_code
+    if([string]::IsNullOrWhiteSpace($code)){ $code = "INPUT_UNAVAILABLE" }
+    $inputErrors = Add-Unique $inputErrors $code
+  }
+}
 $rows = @()
 
-foreach($m in @($mount.rows)){
+$mountRows = @()
+if($inputsAvailable){ $mountRows = @($mount.rows) }
+foreach($m in @($mountRows)){
   $dn = [int]$m.disk_number
   $drive = NormalizeDriveLetter $m.drive_letter
   $mountState = SafeStr $m.mount_state
@@ -189,7 +185,9 @@ foreach($r in @($rows)){
 $receipt = [ordered]@{
   schema = "ld.device.backup_readiness.receipt.v1"
   event_type = "ld.device.backup_readiness.receipt.v1"
-  ok = $true
+  ok = [bool]$inputsAvailable
+  availability = $(if($inputsAvailable){ "available" } else { "unavailable" })
+  input_errors = @($inputErrors)
   repo_root = $RepoRoot
   mode = "operator_backup_readiness"
   destructive = $false
@@ -216,4 +214,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_BACKUP_READINESS_PATH: " + $outPath)
 Write-Output ("DEVICE_BACKUP_READINESS_ROWS: " + [string]$rows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_BACKUP_READINESS_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_BACKUP_READINESS_OK" }
+else { Write-Output "LD_DEVICE_BACKUP_READINESS_UNAVAILABLE" }

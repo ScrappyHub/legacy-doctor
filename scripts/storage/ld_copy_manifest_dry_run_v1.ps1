@@ -13,6 +13,10 @@ function Die([string]$Code,[string]$Detail){
   throw ($Code + ":" + $Detail)
 }
 
+$ReceiptsLib = Join-Path $PSScriptRoot "_lib_ld_receipts_v1.ps1"
+if(-not (Test-Path -LiteralPath $ReceiptsLib -PathType Leaf)){ Die "RECEIPT_LIBRARY_MISSING" $ReceiptsLib }
+. $ReceiptsLib
+
 function EnsureDir([string]$Path){
   if([string]::IsNullOrWhiteSpace($Path)){ return }
   if(-not (Test-Path -LiteralPath $Path -PathType Container)){
@@ -28,17 +32,6 @@ function Write-Utf8NoBomLf([string]$Path,[string]$Text){
   if(-not $t.EndsWith("`n")){ $t += "`n" }
 
   [IO.File]::WriteAllText($Path,$t,[Text.UTF8Encoding]::new($false))
-}
-
-function First-JsonObjectFromOutput([object[]]$Output,[string]$Schema){
-  foreach($line in @($Output)){
-    $s = [string]$line
-    if($s.StartsWith("{") -and $s.Contains(('"schema":"' + $Schema + '"'))){
-      return ($s | ConvertFrom-Json)
-    }
-  }
-
-  Die "JSON_SCHEMA_OUTPUT_MISSING" $Schema
 }
 
 function SafeStr([object]$Value){
@@ -100,12 +93,15 @@ if($LASTEXITCODE -ne 0){
   Die "BACKUP_DRY_RUN_ENUMERATOR_EXIT_NONZERO" ([string]$LASTEXITCODE)
 }
 
-$enum = First-JsonObjectFromOutput -Output $out -Schema "ld.device.backup_dry_run_enumerator.receipt.v1"
+$enum = LDREC-ReadReceiptFromOutput -Output $out -ExpectedSchema "ld.device.backup_dry_run_enumerator.receipt.v1" -SchemaDirectory (Join-Path $RepoRoot "schemas")
+$inputAvailable = SafeBool $enum.ok
 
 $manifestRows = @()
 $skippedRows = @()
 
-foreach($src in @($enum.rows)){
+$enumRows = @()
+if($inputAvailable){ $enumRows = @($enum.rows) }
+foreach($src in @($enumRows)){
   $prefix = SourcePrefix -SourceDrive (SafeStr $src.source_drive) -Label (SafeStr $src.source_volume_label)
 
   foreach($sample in @($src.samples)){
@@ -151,7 +147,8 @@ foreach($m in @($manifestRows)){
 $receipt = [ordered]@{
   schema = "ld.device.copy_manifest_dry_run.receipt.v1"
   event_type = "ld.device.copy_manifest_dry_run.receipt.v1"
-  ok = $true
+  ok = [bool]$inputAvailable
+  availability = $(if($inputAvailable){ "available" } else { "unavailable" })
   repo_root = $RepoRoot
   mode = "copy_manifest_dry_run"
   destructive = $false
@@ -182,4 +179,5 @@ Write-Utf8NoBomLf -Path $outPath -Text $json
 Write-Output ("DEVICE_COPY_MANIFEST_DRY_RUN_PATH: " + $outPath)
 Write-Output ("DEVICE_COPY_MANIFEST_DRY_RUN_ROWS: " + [string]$manifestRows.Count)
 Write-Output $json
-Write-Output "LD_DEVICE_COPY_MANIFEST_DRY_RUN_OK"
+if($receipt.ok){ Write-Output "LD_DEVICE_COPY_MANIFEST_DRY_RUN_OK" }
+else { Write-Output "LD_DEVICE_COPY_MANIFEST_DRY_RUN_UNAVAILABLE" }

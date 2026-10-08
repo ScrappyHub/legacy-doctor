@@ -1,3 +1,31 @@
-scripts/_patch/
-proofs/receipts/*.tmp
+.venv/
+.tmp/
+__pycache__/
+*.py[cod]
+*.egg-info/
 *.log
+*.bak
+
+# Runtime evidence is local output, not source.
+proofs/
+
+# Historical local rewrite/clipboard helpers are not product code.
+scripts/_PATCH*.ps1
+scripts/_patch*.ps1
+scripts/_repair*.ps1
+scripts/_rewrite*.ps1
+scripts/_write*.ps1
+scripts/_clipboard*.ps1
+scripts/_scratch/
+
+# Local key material and tool state must never be committed.
+.nfl/
+*.pem
+*.key
+.env
+.env.*
+
+# Stray empty directories created by past runs.
+/6/
+/False/
+/System.Object/
